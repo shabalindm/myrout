@@ -1,0 +1,49 @@
+{
+  "name": "myroute",
+  "version": "1.0.0",
+  "description": "",
+  "private": false,
+  "main": "webpack.config.js",
+  "scripts": {
+    "start": "webpack-dev-server --open --env.release=0",
+    "build": "webpack --env.prod=0 && cp -R ./src/manual ./dist/manual"
+     },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shabalindm/myrout.git"
+  },
+  "keywords": [],
+  "author": "Dmitry Shabalin",
+  "license": "",
+  "devDependencies": {
+    "@types/fabric": "^1.5.44",
+    "@types/node": "^10.12.0",
+    "chai": "^4.2.0",
+    "clean-webpack-plugin": "^0.1.19",
+    "css-loader": "^1.0.0",
+    "file-loader": "^2.0.0",
+    "html-loader": "^0.5.5",
+    "html-webpack-plugin": "^3.2.0",
+    "mini-css-extract-plugin": "^0.4.4",
+    "node-sass": "^4.9.4",
+    "optimize-css-assets-webpack-plugin": "^5.0.1",
+    "sass-loader": "^7.1.0",
+    "@stryker-mutator/core": "^1.0.0",
+    "@stryker-mutator/html-reporter": "^1.0.0",
+    "@stryker-mutator/javascript-mutator": "^1.0.0",
+    "@stryker-mutator/typescript": "^1.0.0",
+    "@stryker-mutator/webpack-transpiler": "^1.0.0",
+    "style-loader": "^0.23.0",
+    "ts-loader": "^5.2.1",
+    "typescript": "^3.1.1",
+    "webpack": "^4.21.0",
+    "webpack-blocks": "^1.0.0",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-server": "^3.1.9",
+    "webpack-merge": "^4.1.4",
+    "webpack-node-externals": "^1.7.2",
+    "webpack-parts": "^2.0.0",
+    "webpack-shell-plugin": "^0.5.0"
+  },
+  "dependencies": {}
+}
