@@ -37,7 +37,55 @@ module.exports = env => {
         }),
         new OptimizeCSSAssetsPlugin({})
       ]
-    }
+    },
+      module: { // я х.з что здесь для чего
+          rules: [
+              {
+                  test: /\.ts$/,
+                  use: 'ts-loader',
+                  exclude: /node_modules/
+              },
+              {
+
+                  test: /\.s?css$/,
+
+                  use: [
+                      env.release ? { loader: MiniCssExtractPlugin.loader, options: {} } : 'style-loader',
+                      'css-loader',
+                      'sass-loader'
+                  ]
+              },
+              {
+                  test: /\.(png|svg|jpg|gif)$/,
+                  use: [
+
+                      {
+                          loader: 'file-loader',
+                          options: {
+                              name: '[name].[ext]',
+                              outputPath: 'images/'
+                          }
+
+                      }
+                  ]
+              },
+              {
+                  test: /\.(woff|woff2|eot|ttf|otf)$/,
+                  use: [
+                      'file-loader'
+                  ]
+              },
+              {
+                  test: /\.(html)$/,
+                  use: {
+                      loader: 'html-loader',
+                      options: {
+                      }
+                  }
+              }
+          ]
+      }
   }
+
 };
 

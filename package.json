@@ -6,8 +6,8 @@
   "main": "webpack.config.js",
   "scripts": {
     "start": "webpack-dev-server --open --env.release=0",
-    "build": "webpack --env.prod=0 && cp -R ./src/manual ./dist/manual"
-     },
+    "build": "webpack --env.release=0 && cp -R ./src/manual ./dist/manual"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/shabalindm/myrout.git"
@@ -45,5 +45,9 @@
     "webpack-parts": "^2.0.0",
     "webpack-shell-plugin": "^0.5.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "leaflet": "^1.6.0",
+    "@types/geojson": "^1.0.5",
+    "@types/leaflet": "^1.5.7"
+  }
 }
