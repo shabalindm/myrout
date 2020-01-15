@@ -5,8 +5,8 @@
   "private": false,
   "main": "webpack.config.js",
   "scripts": {
-    "start": "webpack-dev-server --open --env.release=0",
-    "build": "webpack --env.release=0 && cp -R ./src/manual ./dist/manual"
+    "start": "cp -R ./src/manual ./dist/manual && webpack-dev-server --open --env.release=0",
+    "build": "cp -R ./src/manual ./dist/manual && webpack --env.release=0"
   },
   "repository": {
     "type": "git",

@@ -9,20 +9,26 @@ module.exports = env => {
 
   return {
     mode: env.release ? 'production' : 'development',
-    entry: './src/ts/index.ts',
+    entry: './src/ts/viewer.ts',
     output: {
-      filename: 'bundle.js',
-      path: path.resolve(__dirname, 'dist')
+      filename: 'viewer.js',
+      path: path.resolve(__dirname, 'dist'),
     },
-    devtool: env.release ? '' : 'inline-source-map',
+      devtool: env.release ? '' : 'inline-source-map',
+      devServer: {
+          contentBase: path.join(__dirname, 'dist'),
+          compress: false,
+          port: 9000,
+          writeToDisk: true,
+           publicPath : '/manual/'
+      },
 
-    plugins: [
-      new webpack.HotModuleReplacementPlugin(),
+      plugins: [
+          new webpack.HotModuleReplacementPlugin(),
       new HtmlWebpackPlugin({
-        template: './src/index.html'
+        template: './src/demo-view.html'
       }),
       new MiniCssExtractPlugin({
-
       })
     ],
     resolve: {

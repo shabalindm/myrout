@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+          integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+          crossorigin=""/>
+    <link rel="stylesheet" type="text/css" href="manual/css/stylesheet.css">
+</head>
+
+<body>
+<div class="container">
+    <div style="margin-left: 50px; width: 50%; padding: 0;">
+    <div id="map" class="map map-home" style="height: 300px; padding: 0; border: 1px solid"></div>
+    <div id="infoPanel" style="width: 100%; border:1px solid; border-top: none">
+        <div id="trackIntervalInfo.title" style="padding: 4px">
+            <b>Тропа</b>
+        </div>
+        <div id="trackIntervalInfo.text" style="padding: 4px">
+            ваывдлжпоывлдопывалджополждо важоыва  вжоло  жолож
+
+        </div>
+        <table width="100%" >
+            <tr>
+                <td class="th1">Начало,км</td>
+                <td class="th1">Длина, км</td>
+                <td class="th1">Время общее/в движении</td>
+                <td class="th1">Набор/сбос высоты</td>
+            </tr>
+            <tr>
+                <td>17.51/122.55</td>
+                <td>17.51</td>
+                <td>2 ч 15 мин/1 ч 20 мин</td>
+                <td>+150/-150</td>
+            </tr>
+        </table>
+    </div>
+    </div>
+</div>
+</body>
+
+<script>
+    let xhr = new XMLHttpRequest();
+    xhr.open('GET', "/manual/demo-data.json", true);
+    xhr.send();
+    xhr.onload = function () {
+        if (xhr.status == 200) {
+            TMap.setJsonData(JSON.parse(xhr.response));
+        } else {
+            alert:'error' + xhr.response;
+        }
+    };
+</script>
+
+</html>
