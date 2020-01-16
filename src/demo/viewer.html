@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
           integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
           crossorigin=""/>
-    <link rel="stylesheet" type="text/css" href="manual/css/stylesheet.css">
+    <link rel="stylesheet" type="text/css" href="/css/stylesheet.css">
 </head>
 
 <body>
@@ -19,7 +19,7 @@
             <b>Тропа</b>
         </div>
         <div id="trackIntervalInfo.text" style="padding: 4px">
-            ваывдлжпоывлдопывалджополждо важоыва  вжоло  жолож
+            ваывдлжпоывлдопывалджополждо важоыва  вжоло  жолож ываоывложалджоы ллллл
 
         </div>
         <table width="100%" >
@@ -40,10 +40,10 @@
     </div>
 </div>
 </body>
-
+<script type="text/javascript" src="/myroute.js"></script>
 <script>
     let xhr = new XMLHttpRequest();
-    xhr.open('GET', "/manual/demo-data.json", true);
+    xhr.open('GET', "/demo/trip1.json", true);
     xhr.send();
     xhr.onload = function () {
         if (xhr.status == 200) {

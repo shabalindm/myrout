@@ -5,8 +5,8 @@
   "private": false,
   "main": "webpack.config.js",
   "scripts": {
-    "start": "cp -R ./src/manual ./dist/manual && webpack-dev-server --open --env.release=0",
-    "build": "cp -R ./src/manual ./dist/manual && webpack --env.release=0"
+    "start": "webpack-dev-server --open --env.release=0",
+    "build": "webpack --env.release=1"
   },
   "repository": {
     "type": "git",
@@ -43,7 +43,8 @@
     "webpack-merge": "^4.1.4",
     "webpack-node-externals": "^1.7.2",
     "webpack-parts": "^2.0.0",
-    "webpack-shell-plugin": "^0.5.0"
+    "webpack-shell-plugin": "^0.5.0",
+    "copy-webpack-plugin": "^5.1.1"
   },
   "dependencies": {
     "leaflet": "^1.6.0",
