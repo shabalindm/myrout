@@ -14,5 +14,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let TMap = new TripMap(map);
 // @ts-ignore
+//Ну не знаю я, как по другому сделать этот объект доступным с веб-страницы.
 window.TMap = TMap;
 

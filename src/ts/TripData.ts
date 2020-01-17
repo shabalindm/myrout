@@ -3,22 +3,23 @@ import {TrackPoint} from "./TrackPoint";
 import {RoutInterval} from "./RoutInterval";
 
 export class TripData{
-    private _track: Array<TrackPoint> = [];
+    private _track: Array<Array<TrackPoint>> = [];
     private _infoPoints: Array<Point> = [];
     private _intervals: Array<RoutInterval> = [];
 
 
-    constructor(track: Array<TrackPoint>, infoPoints: Array<Point>, intervals: Array<RoutInterval>) {
+    constructor(track: Array<Array<TrackPoint>>, infoPoints: Array<Point>, intervals: Array<RoutInterval>) {
         this._track = track;
         this._infoPoints = infoPoints;
         this._intervals = intervals;
     }
 
-    get track(): Array<TrackPoint> {
+
+    get track(): Array<Array<TrackPoint>> {
         return this._track;
     }
 
-    set track(value: Array<TrackPoint>) {
+    set track(value: Array<Array<TrackPoint>>) {
         this._track = value;
     }
 

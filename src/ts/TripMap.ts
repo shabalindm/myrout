@@ -2,7 +2,8 @@ import {LatLng, LeafletEvent, LeafletEventHandlerFn, Map, polyline} from "leafle
 import {TripData} from "./model/TripData";
 import L = require("leaflet");
 import {Parser} from "./Parser";
-import {RoutInterval} from "./model/RoutInterval";
+import {RoutInterval} from "./RoutInterval";
+import {TrackPoint} from "./TrackPoint";
 
 export class TripMap {
     private map: Map;
@@ -26,7 +27,7 @@ export class TripMap {
         // L.marker([51.5, -0.09]).addTo(this.map)
         //     .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
         //     .openPopup();
-        let latLngs = data.track.map((tp) => new LatLng(tp.lat, tp.lng, tp.alt));
+        let latLngs = data.track.map((tp:TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
         let trackLine = L.polyline(latLngs);
         trackLine.addTo(this.map);
         var myIcon = L.divIcon({iconSize: L.point(4, 4)});
@@ -38,7 +39,7 @@ export class TripMap {
         let r = new RoutInterval();
         r.fromPoint = this.data.track[0];
         r.toPoint = this.data.track[1];
-        this.highlightInterval(r);
+        this.highlightInterval(this.getIntervalPoints(r));
     }
 
 
@@ -54,22 +55,26 @@ export class TripMap {
 
     }
 
-    private highlightInterval(interval: RoutInterval){
-       let points = this.data.track;
-       let i = 0;
-       debugger;
-       //доходим до начала участка пути
-       while (interval.fromPoint !== points[i] && i < points.length){
-           i++;
-       }
-       // раскрашиваем
-        let toHighlight: Array<LatLng> = [];
-        while (interval.toPoint !==points[i] && i < points.length) {
-            toHighlight.push(new LatLng(points[i].lat, points[i].lng));
-            i++;
-        };
-
-        let trackLine = L.polyline(toHighlight, {weight:2, color:"red"});
+    private highlightInterval(trackPoints: Array<TrackPoint>) {
+        let latLngs = trackPoints.map((tp:TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
+        let trackLine = L.polyline(latLngs);
         trackLine.addTo(this.map);
+    }
+
+    private getIntervalPoints(interval: RoutInterval) {
+        let points = this.data.track;
+        let cur = 0;
+        while (interval.fromPoint !== points[cur] && cur < points.length - 1) {
+            cur++;
+        }
+        let fromIndex = cur;
+
+        while (interval.toPoint !== points[cur] && cur < points.length - 1) {
+            cur++;
+        }
+        let toIndex = cur;
+
+        const trackPoints = points.slice(fromIndex, toIndex + 1);
+        return trackPoints;
     }
 }

@@ -3,17 +3,7 @@ import {Point} from "./Point";
 export class TrackPoint extends Point{
     private _alt: number;
     private _date: Date;
-    private id: String;
-
-
-
-    constructor(lat: number, lng: number, alt: number, date: Date) {
-        super();
-        this.lat = lat;
-        this.lng = lng;
-        this._alt = alt;
-        this._date = date;
-    }
+    private _id: String;
 
 
     get alt(): number {
@@ -30,5 +20,13 @@ export class TrackPoint extends Point{
 
     set date(value: Date) {
         this._date = value;
+    }
+
+    get id(): String {
+        return this._id;
+    }
+
+    set id(value: String) {
+        this._id = value;
     }
 }
