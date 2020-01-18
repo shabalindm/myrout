@@ -31,7 +31,7 @@ export class TripMap {
         //     .openPopup();
         data.tracks.forEach((track: Track) => {
             let latLngs = track.points.map((tp: TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
-            let trackLine = L.polyline(latLngs);
+            let trackLine = L.polyline(latLngs, {weight:4, opacity:0.6});
             trackLine.addTo(this.map);
             var myIcon = L.divIcon({iconSize: L.point(4, 4)});
             L.marker([60, 60], {icon: myIcon}).addTo(this.map);
@@ -41,8 +41,8 @@ export class TripMap {
         });
 
         let testInterval = new Interval();
-        testInterval.from = 0;
-        testInterval.to = 2;
+        testInterval.from = 1;
+        testInterval.to = 4;
         this.highlightInterval(data.tracks[0], testInterval);
     }
 
@@ -66,7 +66,7 @@ export class TripMap {
             latLngs.push(new LatLng(tp.lat, tp.lng, tp.alt));
         }
         debugger;
-        let trackLine = L.polyline(latLngs, {color:"red", weight:6, opacity:0.5});
+        let trackLine = L.polyline(latLngs, {color:"yellow", weight:7, opacity:0.8});
         trackLine.addTo(this.map);
     }
 
