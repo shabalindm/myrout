@@ -1,9 +1,8 @@
-import {TrackPoint} from "./TrackPoint";
-import {TripData} from "./TripData";
+import {TrackPoint} from "./model/TrackPoint";
+import {TripData} from "./model/TripData";
 import {CrucialTrackPoint} from "./CrucialTrackPoint";
 import {NamedTrackPoint} from "./NamedTrackPoint";
 import {RoutInterval} from "./RoutInterval";
-
 
 export class Parser {
 
