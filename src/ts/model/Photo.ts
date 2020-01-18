@@ -6,4 +6,5 @@ export class Photo extends InfoPoint{
     private direction: number;
     private date: Date;
 
+
 }

@@ -1,13 +1,15 @@
 import {LatLng, LeafletEvent, LeafletEventHandlerFn, Map, polyline} from "leaflet";
-import {TripData} from "./model/TripData";
+import {TripModel} from "./model/TripModel";
 import L = require("leaflet");
 import {Parser} from "./Parser";
-import {RoutInterval} from "./RoutInterval";
-import {TrackPoint} from "./TrackPoint";
+import {TrackPoint} from "./model/TrackPoint";
+import {Track} from "./model/Track";
+import {Interval} from "./model/Interval";
+
 
 export class TripMap {
     private map: Map;
-    private data:TripData;
+    private data:TripModel;
     private btnPrev: HTMLElement = this.get("btn-prev");
     private btnNext: HTMLElement = this.get("btn-next");
 
@@ -22,24 +24,26 @@ export class TripMap {
         return document.getElementById(id)
     }
 
-    public setData(data: TripData) {
-        this.data = data;
+    public setData(data: TripModel) {
+         this.data = data;
         // L.marker([51.5, -0.09]).addTo(this.map)
         //     .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
         //     .openPopup();
-        let latLngs = data.track.map((tp:TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
-        let trackLine = L.polyline(latLngs);
-        trackLine.addTo(this.map);
-        var myIcon = L.divIcon({iconSize: L.point(4, 4)});
-        L.marker([60, 60], {icon: myIcon}).addTo(this.map);
-        trackLine.on('click', (event: LeafletEvent) => {
+        data.tracks.forEach((track: Track) => {
+            let latLngs = track.points.map((tp: TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
+            let trackLine = L.polyline(latLngs);
+            trackLine.addTo(this.map);
+            var myIcon = L.divIcon({iconSize: L.point(4, 4)});
+            L.marker([60, 60], {icon: myIcon}).addTo(this.map);
+            trackLine.on('click', (event: LeafletEvent) => {
 
+            });
         });
 
-        let r = new RoutInterval();
-        r.fromPoint = this.data.track[0];
-        r.toPoint = this.data.track[1];
-        this.highlightInterval(this.getIntervalPoints(r));
+        let testInterval = new Interval();
+        testInterval.from = 0;
+        testInterval.to = 2;
+        this.highlightInterval(data.tracks[0], testInterval);
     }
 
 
@@ -55,26 +59,16 @@ export class TripMap {
 
     }
 
-    private highlightInterval(trackPoints: Array<TrackPoint>) {
-        let latLngs = trackPoints.map((tp:TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
-        let trackLine = L.polyline(latLngs);
+    private highlightInterval(track: Track, interval:Interval) {
+        let latLngs = [];
+        for(var i = interval.from; i < interval.to; i++){
+            let tp = track.points[i];
+            latLngs.push(new LatLng(tp.lat, tp.lng, tp.alt));
+        }
+        debugger;
+        let trackLine = L.polyline(latLngs, {color:"red", weight:6, opacity:0.5});
         trackLine.addTo(this.map);
     }
 
-    private getIntervalPoints(interval: RoutInterval) {
-        let points = this.data.track;
-        let cur = 0;
-        while (interval.fromPoint !== points[cur] && cur < points.length - 1) {
-            cur++;
-        }
-        let fromIndex = cur;
 
-        while (interval.toPoint !== points[cur] && cur < points.length - 1) {
-            cur++;
-        }
-        let toIndex = cur;
-
-        const trackPoints = points.slice(fromIndex, toIndex + 1);
-        return trackPoints;
-    }
 }

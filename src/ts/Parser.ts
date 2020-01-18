@@ -1,23 +1,37 @@
+import {TripModel} from "./model/TripModel";
 import {TrackPoint} from "./model/TrackPoint";
-import {TripData} from "./model/TripData";
-import {CrucialTrackPoint} from "./CrucialTrackPoint";
-import {NamedTrackPoint} from "./NamedTrackPoint";
-import {RoutInterval} from "./RoutInterval";
+import {Interval} from "./model/Interval";
+import {MarkedTrackPoint} from "./model/MarkedTrackPoint";
+import {CrucialTrackPoint} from "./model/CrucialTrackPoint";
+import {Track} from "./model/Track";
+
 
 export class Parser {
 
-    static parseResponse(response: any): TripData {
+    static parseResponse(response: any): TripModel {
         // if(response.type){
         //     if(response.type === 'schema'){
 
-        let track: Array<Array<TrackPoint>> = response.track.map(
-            (chunk: any) => {
-                chunk.map((p: any) => this.parseTrackPoint(p))
+        let tracks: Array<Track> = response.tracks.map(
+            (track: any) => {
+                let pointIdsReverseMap = new Map<string, number>();
+                for (var i = 0; i < track.length; i++) {
+                    let id :string = track[i].id;
+                    if(id) {
+                        pointIdsReverseMap.set(id, i);
+                    }
+                }
+                let points = track.points.map((p: any) => this.parseTrackPoint(p));
+                let intervals: Array<Interval> =  track.intervals.map((x:any) => this.parseInterval(x, pointIdsReverseMap));
+
+                let track1 = new Track();
+                track1.points = points;
+                track1.intervals = intervals;
+                return track1;
             });
 
-        let intervals: Array<RoutInterval> =  response.intervals.map((x:any) => this.parseInterval(x));
 
-        return new TripData(track, null, intervals);
+        return new TripModel(tracks, null);
     }
 
     //хардкорный парсер
@@ -25,12 +39,11 @@ export class Parser {
         let res;
         if (o.name || o.description){
             if (!o.type) {
-                res = new NamedTrackPoint();
+                res = new MarkedTrackPoint();
             } else {
                 if (o.type == 'critPoint') {
                     res = new CrucialTrackPoint();
-                    res.arrivalTime = o.arrivalTime;
-                    res.leavingTime = o.leavingTime;
+
                 } else {
                     throw new Error("Unknown TrackPointType: " + o.type)
                 }
@@ -48,12 +61,12 @@ export class Parser {
         return res;
     }
 
-    static parseInterval(i: any): RoutInterval {
-        let res = new RoutInterval();
+    static parseInterval(i: any, pointIdsReverseMap: Map<string, number>): Interval {
+        let res = new Interval();
         res.name = i.name;
         res.description = i.description;
-        res.fromPointId = i.id1;
-        res.toPointId = i.id2;
+        res.from = pointIdsReverseMap.get(i.id1);
+        res.from = pointIdsReverseMap.get(i.id2);
         return res;
     }
 }
