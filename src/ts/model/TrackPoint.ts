@@ -1,18 +1,8 @@
-import {Point} from "./Point";
+import {LatLng} from "leaflet";
 
-export class TrackPoint extends Point{
-    private _alt: number;
+export class TrackPoint extends LatLng{
     private _date: Date;
     private _id: String;
-
-
-    get alt(): number {
-        return this._alt;
-    }
-
-    set alt(value: number) {
-        this._alt = value;
-    }
 
     get date(): Date {
         return this._date;

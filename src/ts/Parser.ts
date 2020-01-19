@@ -15,8 +15,8 @@ export class Parser {
         let tracks: Array<Track> = response.tracks.map(
             (track: any) => {
                 let pointIdsReverseMap = new Map<string, number>();
-                for (var i = 0; i < track.length; i++) {
-                    let id :string = track[i].id;
+                for (var i = 0; i < track.points.length; i++) {
+                    let id :string = track.points[i].id;
                     if(id) {
                         pointIdsReverseMap.set(id, i);
                     }
@@ -37,12 +37,15 @@ export class Parser {
     //хардкорный парсер
     static parseTrackPoint(o: any): TrackPoint {
         let res;
+        let lat = o.lat;
+        let lng = o.lng;
+        let alt = o.alt;
         if (o.name || o.description){
             if (!o.type) {
-                res = new MarkedTrackPoint();
+                res = new MarkedTrackPoint(lat, lng, alt);
             } else {
                 if (o.type == 'critPoint') {
-                    res = new CrucialTrackPoint();
+                    res = new CrucialTrackPoint(lat, lng, alt);
 
                 } else {
                     throw new Error("Unknown TrackPointType: " + o.type)
@@ -51,11 +54,9 @@ export class Parser {
             res.description = o.description;
             res.name = o.name;
         } else {
-            res = new TrackPoint()
+            res = new TrackPoint(lat, lng, alt)
         }
-        res.lat = o.lat;
-        res.lng = o.lng;
-        res.alt = o.alt;
+
         res.date = o.date;
         res.id = o.id;
         return res;
@@ -66,7 +67,10 @@ export class Parser {
         res.name = i.name;
         res.description = i.description;
         res.from = pointIdsReverseMap.get(i.id1);
-        res.from = pointIdsReverseMap.get(i.id2);
+        res.to = pointIdsReverseMap.get(i.id2)+1;
+        if(res.from == undefined || res.to == undefined){
+            throw new Error("Invalid Interval" + JSON.stringify(res))
+        }
         return res;
     }
 }

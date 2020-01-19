@@ -1,4 +1,5 @@
 import {TrackPoint} from "./TrackPoint";
+import {Track} from "./Track";
 
 /**
  * Участок трека. Участки могут накладываться друг на друга, пресекаться и т.д.
@@ -15,6 +16,19 @@ export class Interval {
     private _name: String;
     private _description: String;
 
+    /**
+     * Ссылка на объект Track
+     */
+    private _track: Track;
+
+
+    get track(): Track {
+        return this._track;
+    }
+
+    set track(value: Track) {
+        this._track = value;
+    }
 
     get name(): String {
         return this._name;

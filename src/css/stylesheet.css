@@ -18,18 +18,18 @@ body, html {	margin: 0;	padding: 0; }
     width: 20px;
 }
 
-.navigate-button.next-active{
+.navigate-button.next.enabled{
     background-image: url("/ico/next-blue.png");
     cursor: pointer;
 }
 
-.navigate-button.next-disabled{
+.navigate-button.next.disabled{
     background-image: url("/ico/next-gray.png");
 }
-.navigate-button.prev-active{
+.navigate-button.prev.enabled{
     background-image: url("/ico/prev-blue.png");
     cursor: pointer;
 }
-.navigate-button.prev-disabled{
+.navigate-button.prev.disabled{
     background-image: url("/ico/prev-gray.png");
 }

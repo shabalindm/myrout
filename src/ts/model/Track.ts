@@ -1,4 +1,3 @@
-import {Point} from "./Point";
 import {TrackPoint} from "./TrackPoint";
 import {Interval} from "./Interval";
 
@@ -20,7 +19,7 @@ export class Track{
 
     set intervals(value: Array<Interval>) {
         this._intervals = value;
+        this.intervals.forEach((i) => {i.track = this})
     }
-
 
 }
