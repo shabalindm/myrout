@@ -31,7 +31,10 @@ export class Parser {
             });
 
 
-        return new TripModel(tracks, null);
+        let tripModel = new TripModel(tracks, null);
+        tripModel.name = response.name ? "response.name": "Маршрут";
+        tripModel.description = response.description;
+        return tripModel;
     }
 
     //хардкорный парсер

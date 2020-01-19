@@ -14,17 +14,12 @@ import {Util} from "./Util";
 export class TripMap {
     private map: Map;
     private data:TripModel;
-    private btnPrev: HTMLElement = this.get("btn-prev");
-    private btnNext: HTMLElement = this.get("btn-next");
+
     private selectedLine: Polyline;
     private intervalSequence: SequenceIF<Interval>;
 
     public constructor(map: Map) {
         this.map = map;
-    }
-
-    private get(id:string){
-        return document.getElementById(id)
     }
 
     public setData(data: TripModel) {
@@ -46,33 +41,38 @@ export class TripMap {
                 let pointIndex: number = TripMap.findNearestPointIndex(new LatLng(lat, lng), track);
                 this.intervalSequence = this.createMutiTrackedIntervalSequence(track, pointIndex);
                 this.highlightSelectedInterval();
-                this.highlightNavigationButtons();
             });
         });
+    }
 
-        this.btnNext.addEventListener('click', () => {
-            if(this.intervalSequence == null){
-                this.intervalSequence = SequenceListSequence.create(this.data.tracks
-                    .map((track) => new ArraySequence(track.intervals, 0)), 0);
-            } else {
-                if(this.intervalSequence.hasNext()){
-                    this.intervalSequence.next();
-                }
-            }
-            this.highlightSelectedInterval();
-            this.highlightNavigationButtons();
-        });
-        this.btnPrev.addEventListener('click', () => {
-            if (this.intervalSequence != null && this.intervalSequence.hasPrev()) {
-                this.intervalSequence.prev();
-            } else {
-                this.intervalSequence = null;
-            }
-            this.highlightNavigationButtons();
-        });
+    public nextInterval() {
+        if (this.intervalSequence == null) {
+            this.intervalSequence = SequenceListSequence.create(this.data.tracks
+                .map((track) => new ArraySequence(track.intervals, 0)), 0);
+        } else {
+            this.intervalSequence.next();
+        }
         this.highlightSelectedInterval();
-        this.highlightNavigationButtons();
+    }
 
+    public prevInterval(){
+        if (this.intervalSequence != null && this.intervalSequence.hasPrev()) {
+            this.intervalSequence.prev();
+        } else {
+            this.intervalSequence = null;
+        }
+        this.highlightSelectedInterval();
+    }
+
+    public hasNextInterval():boolean{
+        if(this.intervalSequence == null){
+            return this.data.tracks.some((t) =>t.intervals.length>0);
+        }
+        return this.intervalSequence.hasNext();
+    }
+
+    public hasPrevInterval(){
+      return this.intervalSequence != null;
     }
 
     private static findNearestPointIndex(tagert: LatLng, track: Track): number {
@@ -93,12 +93,6 @@ export class TripMap {
         return Math.abs(p1.lat - p2.lat) + Math.abs(p1.lng - p2.lng)
     }
 
-
-
-    public setJsonData(data:any){
-        let tripData = Parser.parseResponse(data);
-        this.setData(tripData);
-    }
 
 
     private highlightSelectedInterval() {
@@ -138,27 +132,5 @@ export class TripMap {
         );
         return SequenceListSequence.create(arrayOfSeq, trackIndex);
 
-    }
-
-    private highlightNavigationButtons() {
-        if(this.intervalSequence == null){
-            this.enableNavigateButton(this.btnNext, true);
-            this.enableNavigateButton(this.btnPrev, false);
-        } else {
-            this.enableNavigateButton(this.btnNext, this.intervalSequence.hasNext());
-            this.enableNavigateButton(this.btnPrev, true);
-        }
-    }
-
-    private enableNavigateButton(btn: HTMLElement, enable: boolean) {
-        if (enable) {
-            btn.classList.remove("disabled");
-            btn.classList.add("enabled");
-            //btn.setAttribute("disabled", "false");
-        } else {
-            btn.classList.remove("enabled");
-            btn.classList.add("disabled");
-           // btn.setAttribute("disabled", "true");
-        }
     }
 }
