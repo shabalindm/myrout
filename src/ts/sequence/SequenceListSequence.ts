@@ -1,20 +1,28 @@
 import {SequenceIF} from "./SequenceIF";
-import {Interval} from "../model/Interval";
-import {TripModel} from "../model/TripModel";
+import {ArraySequence} from "./ArraySequence";
 
 export class SequenceListSequence<T> implements SequenceIF<T> {
 
     private sequences:Array<SequenceIF<T>>;
     private cur : number;
 
-    constructor(sequenses: Array<SequenceIF<T>>, cur: number) {
-        //отфильтровываме пустые, без них проще
-        this.sequences = sequenses.filter((i) => i.hasNext() || i.hasPrev());
+
+    private constructor(sequences: Array<SequenceIF<T>>, cur: number) {
+        this.sequences = sequences;
         this.cur = cur;
     }
 
+    public static create <T1>(sequenses: Array<SequenceIF<T1>>, cur: number): SequenceIF<T1>{
+        //отфильтруем пустые, без них проще
+        let sequences = sequenses.filter((i) => i.current());
+        if(sequences.length == 0){//вернем пустую последовательность
+            return new ArraySequence([], 0);
+        }
+        return new SequenceListSequence(sequenses, cur);
+    }
+
     hasNext(): boolean {
-       return  this.sequences[this.cur].hasNext() || this.cur <this.sequences.length -1;
+       return  this.sequences[this.cur].hasNext() || this.cur < this.sequences.length -1;
     }
 
     hasPrev(): boolean {
@@ -41,12 +49,12 @@ export class SequenceListSequence<T> implements SequenceIF<T> {
 
     begin(): T {
         this.cur = 0;
-        return this.sequences[0].begin()
+        return this.sequences[this.cur].begin();
     }
 
     end(): T {
-        this.cur = 0;
-        return this.sequences[0].begin()
+        this.cur = this.sequences.length -1;
+        return this.sequences[this.cur].end();
     }
 
     current(): T {

@@ -8,6 +8,7 @@ import {Interval} from "./model/Interval";
 import {ArraySequence} from "./sequence/ArraySequence";
 import {SequenceIF} from "./sequence/SequenceIF";
 import {SequenceListSequence} from "./sequence/SequenceListSequence";
+import {Util} from "./Util";
 
 
 export class TripMap {
@@ -44,34 +45,32 @@ export class TripMap {
                 let lng = event.latlng.lng;
                 let pointIndex: number = TripMap.findNearestPointIndex(new LatLng(lat, lng), track);
                 this.intervalSequence = this.createMutiTrackedIntervalSequence(track, pointIndex);
-                this.highlightInterval(this.intervalSequence.current());
+                this.highlightSelectedInterval();
                 this.highlightNavigationButtons();
             });
         });
 
         this.btnNext.addEventListener('click', () => {
             if(this.intervalSequence == null){
-                this.intervalSequence = new SequenceListSequence(this.data.tracks
+                this.intervalSequence = SequenceListSequence.create(this.data.tracks
                     .map((track) => new ArraySequence(track.intervals, 0)), 0);
             } else {
                 if(this.intervalSequence.hasNext()){
                     this.intervalSequence.next();
                 }
             }
-            this.highlightInterval(this.intervalSequence.current());
+            this.highlightSelectedInterval();
             this.highlightNavigationButtons();
         });
         this.btnPrev.addEventListener('click', () => {
             if (this.intervalSequence != null && this.intervalSequence.hasPrev()) {
                 this.intervalSequence.prev();
-                this.highlightInterval(this.intervalSequence.current());
             } else {
                 this.intervalSequence = null;
-                this.highlightInterval(null);
             }
             this.highlightNavigationButtons();
         });
-
+        this.highlightSelectedInterval();
         this.highlightNavigationButtons();
 
     }
@@ -102,74 +101,44 @@ export class TripMap {
     }
 
 
-    private highlightInterval(interval: Interval) {
-        if (this.selectedLine) {
+    private highlightSelectedInterval() {
+        if (this.selectedLine) { //очишаем предыдущее выделение
             this.selectedLine.remove();
         }
-        if (interval) {
-            let latLngs = [];
-            for (var i = interval.from; i < interval.to; i++) {
-                let tp = interval.track.points[i];
-                latLngs.push(new LatLng(tp.lat, tp.lng, tp.alt));
+        if (this.intervalSequence) {
+            let interval = this.intervalSequence.current();
+            if (interval) {
+                let latLngs = [];
+                for (var i = interval.from; i < interval.to; i++) {
+                    let tp = interval.track.points[i];
+                    latLngs.push(new LatLng(tp.lat, tp.lng, tp.alt));
+                }
+                let trackLine = L.polyline(latLngs, {color: "yellow", weight: 7, opacity: 0.8});
+                this.selectedLine = trackLine;
+                trackLine.addTo(this.map);
             }
-            let trackLine = L.polyline(latLngs, {color: "yellow", weight: 7, opacity: 0.8});
-            this.selectedLine = trackLine;
-            trackLine.addTo(this.map);
         }
-
     }
 
     createMutiTrackedIntervalSequence(track: Track, selectedPointIndex: number): SequenceIF<Interval> {
-        let trackIndex;
+        let trackSequence = Util.createIntervalSequence(track, selectedPointIndex);
+        if(trackSequence == null){//не выбарли ни одной точки
+            return null;
+        }
         let arrayOfSeq: Array<SequenceIF<Interval>> = [];
-
+        let trackIndex;
         this.data.tracks.forEach((track: Track, index: number) => {
                 if (track === track) {
-                    arrayOfSeq.push(TripMap.createIntervalSequence(track, selectedPointIndex));
+                    arrayOfSeq.push(trackSequence);
                     trackIndex = index;
                 } else {
                     arrayOfSeq.push(new ArraySequence(track.intervals, 0));
                 }
             }
         );
-        return new SequenceListSequence(arrayOfSeq, trackIndex);
+        return SequenceListSequence.create(arrayOfSeq, trackIndex);
 
     }
-
-
-
-    /**
-     * Берем точку на треку, и выстраиваем от нее последовательность интервалов, которые ее покрывают.
-     * Последовательность такая: сначала все интервалы, покрывающие точку, начиная с самого малого,
-     * затем все остальныe в естественной последовательности.
-     * @param selectedPointIndex
-     * @param track
-     */
-    static createIntervalSequence(track:Track, selectedPointIndex: number): SequenceIF<Interval>{
-        var before: Array<Interval> = [];
-        var after: Array<Interval> = [];
-        var covering: Array<Interval> = [];
-
-        for (var i = 0; i < track.intervals.length; i++) {
-            let interval = track.intervals[i];
-            if(interval.to  <= i){//заканчиваются до выбаранной точки
-                before.push(interval)
-            } else if(interval.from > i){//начинаюстя после выбранной точки
-                after.push(interval)
-            } else {
-                covering.push(interval);
-            }
-        }
-        debugger;
-        if(covering.length == 0){
-            return null;
-        }
-        covering.sort((a, b) =>  (a.to - a.from) - (b.to - b.from));//Начиная с самых коротких
-
-        var cur = before.length;
-        return new ArraySequence(before.concat(covering).concat(after), cur);
-    }
-
 
     private highlightNavigationButtons() {
         if(this.intervalSequence == null){

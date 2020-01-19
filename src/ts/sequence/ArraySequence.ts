@@ -48,7 +48,7 @@ export class ArraySequence <T> implements SequenceIF<T> {
     }
 
     end(): T {
-        this.cur = this._to;
+        this.cur = this._to - 1;
         return this.array[this.cur]
     }
 
