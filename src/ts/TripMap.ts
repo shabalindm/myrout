@@ -9,11 +9,13 @@ import {ArraySequence} from "./sequence/ArraySequence";
 import {SequenceIF} from "./sequence/SequenceIF";
 import {SequenceListSequence} from "./sequence/SequenceListSequence";
 import {Util} from "./Util";
+import {resolveTxt} from "dns";
+import {RouteInfo} from "./RouteInfo";
 
 
 export class TripMap {
     private map: Map;
-    private data:TripModel;
+    private model:TripModel;
 
     private selectedLine: Polyline;
     private intervalSequence: SequenceIF<Interval>;
@@ -23,7 +25,7 @@ export class TripMap {
     }
 
     public setData(data: TripModel) {
-         this.data = data;
+         this.model = data;
         // L.marker([51.5, -0.09]).addTo(this.map)
         //     .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
         //     .openPopup();
@@ -47,7 +49,7 @@ export class TripMap {
 
     public nextInterval() {
         if (this.intervalSequence == null) {
-            this.intervalSequence = SequenceListSequence.create(this.data.tracks
+            this.intervalSequence = SequenceListSequence.create(this.model.tracks
                 .map((track) => new ArraySequence(track.intervals, 0)), 0);
         } else {
             this.intervalSequence.next();
@@ -66,7 +68,7 @@ export class TripMap {
 
     public hasNextInterval():boolean{
         if(this.intervalSequence == null){
-            return this.data.tracks.some((t) =>t.intervals.length>0);
+            return this.model.tracks.some((t) =>t.intervals.length>0);
         }
         return this.intervalSequence.hasNext();
     }
@@ -114,6 +116,16 @@ export class TripMap {
         }
     }
 
+    public getCurrentInterval(): Interval{
+        if(this.intervalSequence)
+            return this.intervalSequence.current();
+        return null;
+    }
+
+    public getModel():TripModel{
+        return this.model;
+    }
+
     createMutiTrackedIntervalSequence(track: Track, selectedPointIndex: number): SequenceIF<Interval> {
         let trackSequence = Util.createIntervalSequence(track, selectedPointIndex);
         if(trackSequence == null){//не выбарли ни одной точки
@@ -121,7 +133,7 @@ export class TripMap {
         }
         let arrayOfSeq: Array<SequenceIF<Interval>> = [];
         let trackIndex;
-        this.data.tracks.forEach((track: Track, index: number) => {
+        this.model.tracks.forEach((track: Track, index: number) => {
                 if (track === track) {
                     arrayOfSeq.push(trackSequence);
                     trackIndex = index;
@@ -131,6 +143,13 @@ export class TripMap {
             }
         );
         return SequenceListSequence.create(arrayOfSeq, trackIndex);
+
+    }
+
+    public getRouteInfo(): RouteInfo{
+        if(this.intervalSequence == null) {
+            return new RouteInfo(1, 1, 1, 1, 1, 1, 1, this.model.name, this.model.description)
+        }
 
     }
 }

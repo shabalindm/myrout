@@ -60,7 +60,7 @@ export class Parser {
             res = new TrackPoint(lat, lng, alt)
         }
 
-        res.date = o.date;
+        res.date = new Date(Date.parse(o.date));
         res.id = o.id;
         return res;
     }
