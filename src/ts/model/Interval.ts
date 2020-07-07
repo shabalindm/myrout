@@ -1,5 +1,4 @@
-import {TrackPoint} from "./TrackPoint";
-import {Track} from "./Track";
+
 
 /**
  * Участок трека. Участки могут накладываться друг на друга, пресекаться и т.д.
@@ -8,26 +7,29 @@ export class Interval {
     /**
      * Начало интевала, включительно
      */
-    private _from: number;
+    private _from: Date;
     /**
-     * Окончание интервала, не включаяя
+     * Окончание интервала, ВКЛЮЧИТИТЕЛЬНО
      */
-    private _to: number;
+    private _to: Date;
     private _name: String;
     private _description: String;
 
-    /**
-     * Ссылка на объект Track
-     */
-    private _track: Track;
 
-
-    get track(): Track {
-        return this._track;
+    get from(): Date {
+        return this._from;
     }
 
-    set track(value: Track) {
-        this._track = value;
+    set from(value: Date) {
+        this._from = value;
+    }
+
+    get to(): Date {
+        return this._to;
+    }
+
+    set to(value: Date) {
+        this._to = value;
     }
 
     get name(): String {
@@ -36,22 +38,6 @@ export class Interval {
 
     set name(value: String) {
         this._name = value;
-    }
-
-    get from(): number {
-        return this._from;
-    }
-
-    set from(value: number) {
-        this._from = value;
-    }
-
-    get to(): number {
-        return this._to;
-    }
-
-    set to(value: number) {
-        this._to = value;
     }
 
     get description(): String {

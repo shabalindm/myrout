@@ -2,9 +2,10 @@
  * Карта маршрута и панель управления.
  */
 import {TripMap} from "./TripMap";
-import {TripModel} from "./model/TripModel";
-import {Parser} from "./Parser";
-import {Track} from "./model/Track";
+
+import {TrackSegment} from "./model/TrackSegment";
+import {TrackModel} from "./model/TrackModel";
+import {TrackPoint} from "./model/TrackPoint";
 import {Interval} from "./model/Interval";
 
 export class TripViewer {
@@ -14,7 +15,7 @@ export class TripViewer {
     private btnNext: HTMLElement = this.get("btn-next");
     private title: HTMLElement = this.get("infoPanel.title");
     private description: HTMLElement = this.get("infoPanel.text");
-    private beginning: HTMLElement = this.get("infoPanel.beginning");
+    // private beginning: HTMLElement = this.get("infoPanel.beginning");
     private distance: HTMLElement = this.get("infoPanel.distance");
     private time: HTMLElement = this.get("infoPanel.time");
     private dates: HTMLElement = this.get("infoPanel.dates");
@@ -23,6 +24,7 @@ export class TripViewer {
 
 
     private get(id:string){
+        //todo = искать внутри блока, а не во всем документе
         return document.getElementById(id)
     }
 
@@ -42,52 +44,71 @@ export class TripViewer {
                 this.render();
             }
         });
+        tripMap.addIntervalSelectedListener(() =>{
+            this.highlightNavigationButtons();
+            this.render();
+        });
 
     }
 
     public setJsonData(data:any){
-        let tripData = Parser.parseResponse(data);
-        this.tripMap.setData(tripData);
+        // let tripData = Parser.parseResponse(data);
+        // this.tripMap.setModel(tripData);
+        this.highlightNavigationButtons();
+        this.render();
+    }
+
+    public getMockData():TrackModel {
+        const trackModel = new TrackModel();
+        trackModel.name = "День 1";
+        trackModel.description ='';
+        const interval = new Interval();
+        interval.from =  new Date(0);
+        interval.to =  new Date(100000);
+        interval.name = "Тропа";
+        interval.description = "Вдоль тропы растет малина, что сильно замедляет движение";
+        trackModel.intervals.push(interval)
+        const trackSegment = new TrackSegment();
+        trackSegment.points.push(new TrackPoint(60, 60.0, 100,  new Date(0)));
+        trackSegment.points.push(new TrackPoint(60.1, 60.1, 105,  new Date(100000)));
+        trackSegment.points.push(new TrackPoint(60, 60.2, 110,  new Date(200000)));
+        trackSegment.points.push(new TrackPoint(60.1, 60.3, 105,  new Date(300000)));
+        trackSegment.points.push(new TrackPoint(60, 60.4,  100,  new Date(400000)));
+
+        trackModel.segments.push(trackSegment)
+        return trackModel;
+
+    }
+
+    public setModel(data:TrackModel){
+        this.tripMap.setModel(data);
         this.highlightNavigationButtons();
         this.render();
     }
 
     private render(){
         let interval = this.tripMap.getCurrentInterval();
-        let model = this.tripMap.getModel();
+        const model = this.tripMap.getModel();
         if(interval) {
             this.title.innerHTML = TripViewer.stringify(interval.name);
             this.description.innerHTML = TripViewer.stringify(interval.description);
-            this.setBegingsFromField(interval, model);
-            let trackLength = TripViewer.getTrackLength(interval.track, interval.from, interval.to);
+            // this.setBegingsFromField(interval, model);
+            let trackLength = TripViewer.getTrackLength(model.segments, interval.from, interval.to);
             this.distance.innerHTML = (trackLength / 1000).toFixed(2);
-            let beginDate = interval.track.points[interval.from].date;
-            let endDate = interval.track.points[interval.to-1].date;
-            this.setDatesFields(endDate, beginDate);
-            let [gain,loss] = TripViewer.getTrackDeltaH(interval.track, interval.from, interval.to);
+            this.setDatesFields(interval.to, interval.from);
+            let [gain,loss] = TripViewer.getTrackDeltaH(model.segments, interval.from, interval.to);
             this.deltaH.innerHTML = Math.round(gain) + " / " + Math.round(loss);
 
         } else {
-            this.beginning.innerHTML = "-";
-            let totalDistance = model.tracks
-                .map((track) => TripViewer.getTrackLength(track))
-                .reduce((a, b) => a + b, 0);
-            this.distance.innerHTML = (totalDistance / 1000).toFixed(2);
-            let lastTrack = model.tracks[model.tracks.length - 1];
-            this.setDatesFields(lastTrack.points[lastTrack.points.length - 1].date, model.tracks[0].points[0].date);
-
-            let [gain, loss] = [0, 0];
-            model.tracks.forEach((track) => {
-                let [g, l] = TripViewer.getTrackDeltaH(track);
-                gain += g;
-                loss += g;
-            });
-            this.deltaH.innerHTML = Math.round(gain) + " / " + Math.round(loss);
-
             this.title.innerHTML = TripViewer.stringify(model.name);
             this.description.innerHTML = TripViewer.stringify(model.description);
-
-
+            // this.setBegingsFromField(interval, model);
+            let trackLength = TripViewer.getTrackLength(model.segments);
+            this.distance.innerHTML = (trackLength / 1000).toFixed(2);
+            const lastSegment = model.segments[model.segments.length-1];
+            this.setDatesFields(lastSegment.points[lastSegment.points.length -1].date, model.segments[0].points[0].date,);
+            let [gain,loss] = TripViewer.getTrackDeltaH(model.segments);
+            this.deltaH.innerHTML = Math.round(gain) + " / " + Math.round(loss);
         }
 
     }
@@ -125,37 +146,52 @@ export class TripViewer {
         // порнография
         return ('0' + beginDate.getHours()).slice(-2) + ':' + ('0' + beginDate.getMinutes()).slice(-2);
     }
+    //
+    // private setBegingsFromField(interval: Interval, model: TripModel) {
+    //     var length = 0;
+    //     for (let i = 0; i < model.tracks.length; i++) {
+    //         let track = model.tracks[i];
+    //         if (track === interval.track) {
+    //             break;
+    //         }
+    //         length += TripViewer.getTrackLength(track);
+    //     }
+    //     length += TripViewer.getTrackLength(interval.track, 0, interval.from + 1);
+    //     this.beginning.innerHTML = (length / 1000).toFixed(2);
+    // }
 
-    private setBegingsFromField(interval: Interval, model: TripModel) {
-        var length = 0;
-        for (let i = 0; i < model.tracks.length; i++) {
-            let track = model.tracks[i];
-            if (track === interval.track) {
-                break;
-            }
-            length += TripViewer.getTrackLength(track);
-        }
-        length += TripViewer.getTrackLength(interval.track, 0, interval.from + 1);
-        this.beginning.innerHTML = (length / 1000).toFixed(2);
-    }
-
-    private static getTrackLength(track: Track, from = 0, to = track.points.length):number {
+    private static getTrackLength(track: TrackSegment[], from: Date = null, to: Date = null):number {
         let res = 0;
-        for (var i = from + 1; i < to; i++) {
-            res += track.points[i].distanceTo(track.points[i-1])
+        //todo - оптимизировать
+        for (const trackSegment of track) {
+            for (var i = 0; i < trackSegment.points.length-2; i++) {
+                let p1 = trackSegment.points[i];
+                let p2 = trackSegment.points[i+1];
+                if((from == null || p1.date >= from) && (to == null || p2.date <= to)){
+                    res += p1.distanceTo(p2)
+                }
+            }
         }
+
         return res;
     }
 
-    private static getTrackDeltaH(track: Track, from = 0, to = track.points.length): Array<number> {
+    private static getTrackDeltaH(track: TrackSegment[], from: Date = null, to: Date = null): Array<number> {
         let gain = 0;
         let loss = 0;
-        for (var i = from + 1; i < to; i++) {
-            let deltaH = track.points[i].alt - track.points[i-1].alt;
-            if(deltaH > 0){
-                gain += deltaH;
-            } else {
-                loss -= deltaH;
+        //todo - оптимизировать
+        for (const trackSegment of track) {
+            for (var i = 0; i < trackSegment.points.length-2; i++) {
+                let p1 = trackSegment.points[i];
+                let p2 = trackSegment.points[i+1];
+                if((from == null || p1.date >= from) && (to == null || p2.date <= to)){
+                    let deltaH = p2.alt - p1.alt;
+                    if(deltaH > 0){
+                        gain += deltaH;
+                    } else {
+                        loss -= deltaH;
+                    }
+                }
             }
         }
         return [gain, loss];

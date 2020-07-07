@@ -46,16 +46,17 @@
 </body>
 <script type="text/javascript" src="/myroute.js"></script>
 <script>
-    let xhr = new XMLHttpRequest();
-    xhr.open('GET', "/demo/trip1.json", true);
-    xhr.send();
-    xhr.onload = function () {
-        if (xhr.status == 200) {
-            TMap.setJsonData(JSON.parse(xhr.response));
-        } else {
-            alert:'error' + xhr.response;
-        }
-    };
+    TMap.setModel(TMap.getMockData())
+    // let xhr = new XMLHttpRequest();
+    // xhr.open('GET', "/demo/test-trip-model.json", true);
+    // xhr.send();
+    // xhr.onload = function () {
+    //     if (xhr.status == 200) {
+    //         TMap.setModel(JSON.parse(xhr.response));
+    //     } else {
+    //         alert:'error' + xhr.response;
+    //     }
+    // };
 </script>
 
 </html>

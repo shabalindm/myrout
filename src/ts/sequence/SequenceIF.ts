@@ -1,4 +1,3 @@
-import {Interval} from "../model/Interval";
 
 export interface SequenceIF<T> {
 
@@ -9,6 +8,5 @@ export interface SequenceIF<T> {
     hasPrev():boolean;
     begin():T;
     end():T;
-
 
 }

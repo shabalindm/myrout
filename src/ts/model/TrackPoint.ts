@@ -1,8 +1,16 @@
 import {LatLng} from "leaflet";
 
-export class TrackPoint extends LatLng{
+/**
+ * Точка трека. Дата является ключом
+ */
+export class TrackPoint extends LatLng {
     private _date: Date;
-    private _id: String;
+
+
+    constructor(latitude: number, longitude: number, altitude: number, date: Date) {
+        super(latitude, longitude, altitude);
+        this._date = date;
+    }
 
     get date(): Date {
         return this._date;
@@ -10,13 +18,5 @@ export class TrackPoint extends LatLng{
 
     set date(value: Date) {
         this._date = value;
-    }
-
-    get id(): String {
-        return this._id;
-    }
-
-    set id(value: String) {
-        this._id = value;
     }
 }
