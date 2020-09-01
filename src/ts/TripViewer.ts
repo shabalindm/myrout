@@ -1,5 +1,5 @@
 /**
- * Карта маршрута и панель управления.
+ * Карта маршрута, панель управления, с информацией и статистикой.
  */
 import {TripMap} from "./TripMap";
 
@@ -11,25 +11,41 @@ import {Interval} from "./model/Interval";
 export class TripViewer {
 
     tripMap:TripMap;
-    private btnPrev: HTMLElement = this.get("btn-prev");
-    private btnNext: HTMLElement = this.get("btn-next");
-    private title: HTMLElement = this.get("infoPanel.title");
-    private description: HTMLElement = this.get("infoPanel.text");
+    /**
+     * родительский div, в котором сидит виджет
+     * @private
+     */
+    private parent: Element;
+    private btnPrev: HTMLElement;
+    private btnNext: HTMLElement;
+    private title: HTMLElement;
+    private description: HTMLElement;
     // private beginning: HTMLElement = this.get("infoPanel.beginning");
-    private distance: HTMLElement = this.get("infoPanel.distance");
-    private time: HTMLElement = this.get("infoPanel.time");
-    private dates: HTMLElement = this.get("infoPanel.dates");
-    private deltaH: HTMLElement = this.get("infoPanel.deltaH");
+    private distance: HTMLElement;
+    private time: HTMLElement;
+    private dates: HTMLElement;
+    private deltaH: HTMLElement;
 
 
 
-    private get(id:string){
-        //todo = искать внутри блока, а не во всем документе
-        return document.getElementById(id)
+    private get(cssClass:string){
+        return (<HTMLElement[]><any>this.parent.getElementsByClassName(cssClass))[0];
     }
 
-    constructor(tripMap: TripMap) {
+
+    constructor(tripMap: TripMap, parent:Element) {
         this.tripMap = tripMap;
+        this.parent = parent;
+        this.btnPrev = this.get("btn-prev");
+        this.btnNext = this.get("btn-next");
+        this.title = this.get("infoPanel.title");
+        this.description = this.get("infoPanel.text");
+        // private beginning: HTMLElement = this.get("infoPanel.beginning");
+        this.distance = this.get("infoPanel.distance");
+        this.time = this.get("infoPanel.time");
+        this.dates = this.get("infoPanel.dates");
+        this.deltaH = this.get("infoPanel.deltaH");
+
         this.btnNext.addEventListener('click', () => {
             if (this.tripMap.hasNextInterval()) {
                 tripMap.nextInterval();
@@ -56,28 +72,6 @@ export class TripViewer {
         // this.tripMap.setModel(tripData);
         this.highlightNavigationButtons();
         this.render();
-    }
-
-    public getMockData():TrackModel {
-        const trackModel = new TrackModel();
-        trackModel.name = "День 1";
-        trackModel.description ='';
-        const interval = new Interval();
-        interval.from =  new Date(0);
-        interval.to =  new Date(100000);
-        interval.name = "Тропа";
-        interval.description = "Вдоль тропы растет малина, что сильно замедляет движение";
-        trackModel.intervals.push(interval)
-        const trackSegment = new TrackSegment();
-        trackSegment.points.push(new TrackPoint(60, 60.0, 100,  new Date(0)));
-        trackSegment.points.push(new TrackPoint(60.1, 60.1, 105,  new Date(100000)));
-        trackSegment.points.push(new TrackPoint(60, 60.2, 110,  new Date(200000)));
-        trackSegment.points.push(new TrackPoint(60.1, 60.3, 105,  new Date(300000)));
-        trackSegment.points.push(new TrackPoint(60, 60.4,  100,  new Date(400000)));
-
-        trackModel.segments.push(trackSegment)
-        return trackModel;
-
     }
 
     public setModel(data:TrackModel){

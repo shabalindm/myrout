@@ -4,6 +4,15 @@
  * Участок трека. Участки могут накладываться друг на друга, пресекаться и т.д.
  */
 export class Interval {
+
+
+    constructor(from: Date, to: Date, name: String, description: String) {
+        this._from = from;
+        this._to = to;
+        this._name = name;
+        this._description = description;
+    }
+
     /**
      * Начало интевала, включительно
      */

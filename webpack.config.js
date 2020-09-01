@@ -9,7 +9,7 @@ module.exports = env => {
 
     return {
         mode: env.release ? 'production' : 'development',
-        entry: './src/ts/viewer.ts',
+        entry: './src/ts/my-route-asset.ts',
         output: {
             filename: 'myroute.js',
             path: path.resolve(__dirname, 'dist'),
@@ -20,8 +20,7 @@ module.exports = env => {
             compress: false,
             port: 9002,
             writeToDisk: false,
-            openPage: '/demo/viewer.html'
-
+            openPage: '/demo/demo.html'
         },
 
         plugins: [

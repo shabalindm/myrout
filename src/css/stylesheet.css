@@ -33,3 +33,14 @@ body, html {	margin: 0;	padding: 0; }
 .navigate-button.prev.disabled{
     background-image: url("/ico/prev-gray.png");
 }
+
+.myrout-map {
+    height: 300px;
+    padding: 0;
+    border: 1px solid
+}
+.myrout-infoPanel {
+    width: 100%;
+    border:1px solid;
+    border-top: none;
+}
