@@ -80,6 +80,9 @@ for (const widget of widgets) {
         const trackInterval = new Interval(new Date(interval.from), new Date(interval.to), interval.name, interval.description);
         trackModel.intervals.push(trackInterval);
     }
+
+    trackModel.name = trackDescription.name;
+    trackModel.description = trackDescription.description;
     tripViewer.setModel(trackModel);
 
 }

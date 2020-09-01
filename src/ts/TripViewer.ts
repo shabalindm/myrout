@@ -5,8 +5,6 @@ import {TripMap} from "./TripMap";
 
 import {TrackSegment} from "./model/TrackSegment";
 import {TrackModel} from "./model/TrackModel";
-import {TrackPoint} from "./model/TrackPoint";
-import {Interval} from "./model/Interval";
 
 export class TripViewer {
 
@@ -87,9 +85,9 @@ export class TripViewer {
             this.title.innerHTML = TripViewer.stringify(interval.name);
             this.description.innerHTML = TripViewer.stringify(interval.description);
             // this.setBegingsFromField(interval, model);
-            let trackLength = TripViewer.getTrackLength(model.segments, interval.from, interval.to);
+            let [trackLength, timeInMotion] = TripViewer.getTrackLengthAndTime(model.segments, interval.from, interval.to);
             this.distance.innerHTML = (trackLength / 1000).toFixed(2);
-            this.setDatesFields(interval.to, interval.from);
+            this.setDatesFields(interval.to, interval.from, timeInMotion);
             let [gain,loss] = TripViewer.getTrackDeltaH(model.segments, interval.from, interval.to);
             this.deltaH.innerHTML = Math.round(gain) + " / " + Math.round(loss);
 
@@ -97,10 +95,10 @@ export class TripViewer {
             this.title.innerHTML = TripViewer.stringify(model.name);
             this.description.innerHTML = TripViewer.stringify(model.description);
             // this.setBegingsFromField(interval, model);
-            let trackLength = TripViewer.getTrackLength(model.segments);
+            let [trackLength, timeInMotion] = TripViewer.getTrackLengthAndTime(model.segments);
             this.distance.innerHTML = (trackLength / 1000).toFixed(2);
             const lastSegment = model.segments[model.segments.length-1];
-            this.setDatesFields(lastSegment.points[lastSegment.points.length -1].date, model.segments[0].points[0].date,);
+            this.setDatesFields(lastSegment.points[lastSegment.points.length -1].date, model.segments[0].points[0].date, timeInMotion);
             let [gain,loss] = TripViewer.getTrackDeltaH(model.segments);
             this.deltaH.innerHTML = Math.round(gain) + " / " + Math.round(loss);
         }
@@ -113,16 +111,21 @@ export class TripViewer {
         return String(s);
     }
 
-    private setDatesFields(endDate: Date, beginDate: Date) {
-        let minutesTotal = Math.round((endDate.getTime() - beginDate.getTime()) / 60000);
+    private setDatesFields(endDate: Date, beginDate: Date, timeInMotion:number) {
+        const deltaTMillis = endDate.getTime() - beginDate.getTime();
+        this.time.innerHTML = TripViewer.timeIntervalToString(deltaTMillis) + '(' + TripViewer.timeIntervalToString(timeInMotion)+')';
+        if (TripViewer.datesAreOnSameDay(beginDate, endDate)) {
+            this.dates.innerHTML = this.formatDate(beginDate) + " - " + this.formatTime(endDate);
+        } else {
+            this.dates.innerHTML = this.formatDate(beginDate) + " - " + this.formatDate(endDate);
+        }
+    }
+
+    private static timeIntervalToString(deltaTMillis: number) {
+        let minutesTotal = Math.round(deltaTMillis / 60000);
         let hours = Math.floor(minutesTotal / 60);
         var minutes = minutesTotal % 60;
-        this.time.innerHTML = (hours == 0 ? '' : hours + ' ч ') + minutes + ' мин';
-        if (TripViewer.datesAreOnSameDay(beginDate, endDate)) {
-            this.dates.innerHTML = this.formatDate(beginDate) + " / " + this.formatTime(endDate);
-        } else {
-            this.dates.innerHTML = this.formatDate(beginDate) + " / " + this.formatDate(endDate);
-        }
+        return (hours == 0 ? '' : hours + ' ч ') + minutes + ' мин';
     }
 
     static datesAreOnSameDay(first:Date, second:Date):boolean {
@@ -148,45 +151,61 @@ export class TripViewer {
     //         if (track === interval.track) {
     //             break;
     //         }
-    //         length += TripViewer.getTrackLength(track);
+    //         length += TripViewer.getTrackLengthAndTime(track);
     //     }
-    //     length += TripViewer.getTrackLength(interval.track, 0, interval.from + 1);
+    //     length += TripViewer.getTrackLengthAndTime(interval.track, 0, interval.from + 1);
     //     this.beginning.innerHTML = (length / 1000).toFixed(2);
     // }
 
-    private static getTrackLength(track: TrackSegment[], from: Date = null, to: Date = null):number {
-        let res = 0;
+    private static getTrackLengthAndTime(track: TrackSegment[], from: Date = null, to: Date = null): [number, number] {
+        let distance = 0;
+        let timeInMotion = 0;
         //todo - оптимизировать
         for (const trackSegment of track) {
             for (var i = 0; i < trackSegment.points.length-2; i++) {
                 let p1 = trackSegment.points[i];
                 let p2 = trackSegment.points[i+1];
                 if((from == null || p1.date >= from) && (to == null || p2.date <= to)){
-                    res += p1.distanceTo(p2)
+                    const deltaL = p1.distanceTo(p2);
+                    distance += deltaL;
+                    const deltaT = p2.date.getTime() - p1.date.getTime();
+                    if(deltaL > 50 || deltaT < 180000){//все, что меньше 3 мин - не считаем за остановку движения
+                        timeInMotion += deltaT;
+                    }
                 }
             }
         }
 
-        return res;
+        return [distance, timeInMotion];
     }
 
-    private static getTrackDeltaH(track: TrackSegment[], from: Date = null, to: Date = null): Array<number> {
+    private static getTrackDeltaH(track: TrackSegment[], from: Date = null, to: Date = null): [number, number] {
         let gain = 0;
         let loss = 0;
         //todo - оптимизировать
         for (const trackSegment of track) {
+            let deltaH = 0;
             for (var i = 0; i < trackSegment.points.length-2; i++) {
                 let p1 = trackSegment.points[i];
                 let p2 = trackSegment.points[i+1];
                 if((from == null || p1.date >= from) && (to == null || p2.date <= to)){
-                    let deltaH = p2.alt - p1.alt;
-                    if(deltaH > 0){
+                    deltaH += (p2.alt - p1.alt);
+                    //перепады меньше 10 м не учитываем.
+                    if(deltaH > 10){
                         gain += deltaH;
-                    } else {
-                        loss -= deltaH;
+                        deltaH = 0;
+                    } else if ((deltaH < -10)){
+                        loss += deltaH;
+                        deltaH = 0;
                     }
                 }
             }
+            if(deltaH > 0){
+                gain += deltaH;
+            } else if ((deltaH < 0)){
+                loss += deltaH;
+            }
+
         }
         return [gain, loss];
     }
