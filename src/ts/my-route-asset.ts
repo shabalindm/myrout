@@ -9,6 +9,8 @@ import {TrackPoint} from "./model/TrackPoint";
 import {Interval} from "./model/Interval";
 import {Photo} from "./model/Photo";
 import {Mark} from "./model/Mark";
+import {Util} from "./Util";
+
 
 const widgets = document.getElementsByClassName("trip-interactive-map");
 
@@ -25,7 +27,7 @@ for (const widget of widgets) {
 
 
     var xhr = new XMLHttpRequest();//todo - переделать на асинхронный запрос
-    const widgetHtmlUrl = '../myrout/css/trip-map-widget.html';
+    const widgetHtmlUrl = Util.getUrl('trip-map-widget.html');
     xhr.open('GET', widgetHtmlUrl, false);//todo-переместить файл
     xhr.send();
     if (xhr.status != 200) {

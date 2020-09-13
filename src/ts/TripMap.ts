@@ -42,7 +42,7 @@ export class TripMap {
         });
 
         const photoIcon = L.icon({
-            iconUrl: '/myrout/ico/camera.svg',
+            iconUrl: Util.getUrl('ico/camera.svg'),
 
             iconSize:     [20, 20], // size of the icon
             // shadowSize:   [50, 64], // size of the shadow
@@ -67,7 +67,7 @@ export class TripMap {
         });
 
         const markerIcon =  L.icon({
-            iconUrl: '/myrout/ico/location.svg',
+            iconUrl: Util.getUrl('ico/location.svg'),
             iconSize:     [20, 20],
             iconAnchor:   [10, 20]
         });

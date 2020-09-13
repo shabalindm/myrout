@@ -27,9 +27,8 @@ module.exports = env => {
             new webpack.HotModuleReplacementPlugin(),
             new MiniCssExtractPlugin({}),
             new CopyWebpackPlugin([
-                {from: 'src/ico', to: 'myrout/ico'},
+                {from: 'src/resources', to: 'myrout'},
                 {from: 'src/demo', to: 'demo'},
-                {from: 'src/css', to: 'myrout/css'}//пока тупо копируем
             ]),
         ],
         resolve: {
