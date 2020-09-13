@@ -12,7 +12,9 @@ import {TrackModel} from "./model/TrackModel";
 import {TrackSegment} from "./model/TrackSegment";
 import {LineString, MultiLineString} from "geojson";
 
-
+/**
+ * Карта с нанесенными на нее объектами
+ */
 export class TripMap {
     private map: Map;
     private model: TrackModel;
@@ -35,10 +37,61 @@ export class TripMap {
             const latLngs = track.points.map((tp: TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
             const trackLine = L.polyline(latLngs, {weight: 4, opacity: 0.6});
             trackLine.addTo(this.map);
-            const myIcon = L.divIcon({iconSize: L.point(4, 4)});
-            L.marker([60, 60], {icon: myIcon}).addTo(this.map);
+
             this.addTrackOnClickListener(trackLine, track);
         });
+
+        const photoIcon = L.icon({
+            iconUrl: '/myrout/ico/camera.svg',
+
+            iconSize:     [20, 20], // size of the icon
+            // shadowSize:   [50, 64], // size of the shadow
+            // iconAnchor:   [22, 94], // point of the icon which will correspond to marker's location
+            // shadowAnchor: [4, 62],  // the same for the shadow
+           // popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+        });
+
+        model.photos.forEach((photo)=>{
+            const marker = L.marker([photo.lat,  photo.lon], {icon: photoIcon});
+            marker.addTo(this.map);
+
+            var photoImg = '<img src=' + photo.url +   ' height="300px"/>'
+             + 'Фото ' + photo.number + '. ' + photo.name;
+
+
+            marker.bindPopup(photoImg,  {
+                // @ts-ignore
+                maxWidth: "auto"
+            })
+
+        });
+
+        const markerIcon =  L.icon({
+            iconUrl: '/myrout/ico/location.svg',
+            iconSize:     [20, 20],
+            iconAnchor:   [10, 20]
+        });
+
+        model.marks.forEach(mark =>{
+            const marker = L.marker([mark.lat,  mark.lng], {icon: markerIcon, opacity:50, title: mark.name});
+            marker.addTo(this.map);
+            var popup = `<b>${mark.name}</b><br/> ${mark.description}`
+
+
+            marker.bindPopup(popup,  {
+                // @ts-ignore
+             //   maxWidth: "auto"
+            })
+        });
+
+        //В помощь разработчику, чтобы он всегда мог найти координтаты места на карте
+        this.map.on('click', event => {
+            // @ts-ignore
+            const latlng = event.latlng;
+            console.log(`"lat": ${latlng.lat.toFixed(6)}, "lng": ${latlng.lng.toFixed(6)}`)
+        })
+
+        L.control.scale().addTo(this.map);
     }
 
 

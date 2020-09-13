@@ -19,23 +19,23 @@ body, html {	margin: 0;	padding: 0; }
 }
 
 .navigate-button.next.enabled{
-    background-image: url("/ico/next-blue.png");
+    background-image: url("/myrout/ico/next-blue.png");
     cursor: pointer;
 }
 
 .navigate-button.next.disabled{
-    background-image: url("/ico/next-gray.png");
+    background-image: url("/myrout/ico/next-gray.png");
 }
 .navigate-button.prev.enabled{
-    background-image: url("/ico/prev-blue.png");
+    background-image: url("/myrout/ico/prev-blue.png");
     cursor: pointer;
 }
 .navigate-button.prev.disabled{
-    background-image: url("/ico/prev-gray.png");
+    background-image: url("/myrout/ico/prev-gray.png");
 }
 
 .myrout-map {
-    height: 300px;
+    height: 100%;
     padding: 0;
     border: 1px solid
 }

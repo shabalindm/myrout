@@ -7,15 +7,28 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
           integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
           crossorigin=""/>
-    <link rel="stylesheet" type="text/css" href="/css/stylesheet.css">
+    <link rel="stylesheet" type="text/css" href="../myrout/css/stylesheet.css">
+
+<!--    Подключаем бутстрап, пока прям сюда-->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
 
 </head>
-
+>
 <body>
+
+<script>	$('.imagepreview').attr('src', $(this).find('img').attr('src'));
+$('#imagemodal').modal('show');</script>
+
 <h2>Часть первая: акклиматизация</h2>
-<div class="trip-interactive-map" track-url="/demo/track_kavkaz_2020_1.gpx" from="2020-08-01 09:00:00" to="2020-08-03 18:00:00"
-     track-descriptions-url="/demo/part-1.json" photo-descriptions-url="/demo/photos-1.json" objects-url="/demo/objects-1.json" center="43.13,43.34" zoom="12"></div>
+<div style="width: 50%; height: 500px; padding-left: 50px" class="trip-interactive-map" track-url="/demo/track_kavkaz_2020_1.gpx" from="2020-08-01 09:00:00" to="2020-08-03 18:00:00"
+     track-descriptions-url="/demo/part-1.json" photo-descriptions-url="/demo/photos-1.json" objects-url="/demo/objects-1.json" center="43.085,43.335" zoom="12"></div>
+
+
 
 
 </body>
-<script type="text/javascript" src="/myroute.js"></script>
+<script type="text/javascript" src="../myrout/myrout.js"></script>

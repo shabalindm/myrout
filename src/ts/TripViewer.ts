@@ -6,6 +6,9 @@ import {TripMap} from "./TripMap";
 import {TrackSegment} from "./model/TrackSegment";
 import {TrackModel} from "./model/TrackModel";
 
+/**
+ * Обрамление карты и управляющие элементы.
+ */
 export class TripViewer {
 
     tripMap:TripMap;

@@ -11,7 +11,7 @@ module.exports = env => {
         mode: env.release ? 'production' : 'development',
         entry: './src/ts/my-route-asset.ts',
         output: {
-            filename: 'myroute.js',
+            filename: 'myrout/myrout.js',
             path: path.resolve(__dirname, 'dist'),
         },
         devtool: env.release ? '' : 'inline-source-map',
@@ -19,7 +19,7 @@ module.exports = env => {
             contentBase: path.join(__dirname, 'dist'),
             compress: false,
             port: 9002,
-            writeToDisk: false,
+            writeToDisk: true,
             openPage: '/demo/demo.html'
         },
 
@@ -27,9 +27,9 @@ module.exports = env => {
             new webpack.HotModuleReplacementPlugin(),
             new MiniCssExtractPlugin({}),
             new CopyWebpackPlugin([
-                {from: 'src/ico', to: 'ico'},
+                {from: 'src/ico', to: 'myrout/ico'},
                 {from: 'src/demo', to: 'demo'},
-                {from: 'src/css', to: 'css'}//пока тупо копируем
+                {from: 'src/css', to: 'myrout/css'}//пока тупо копируем
             ]),
         ],
         resolve: {
