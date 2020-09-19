@@ -34,7 +34,7 @@ for (const widget of widgets) {
         throw new Error('cannot get ' + widgetHtmlUrl + '. ' + xhr.status + ': ' + xhr.statusText);
     }
     widget.innerHTML = xhr.responseText;
-    const mapElement: HTMLElement = (<HTMLElement[]><any>widget.getElementsByClassName('myrout-map'))[0];
+    const mapElement: HTMLElement = (<HTMLElement[]><any>widget.getElementsByClassName('myrout__map'))[0];
     const map = L.map(mapElement).setView([startCoords[0], startCoords[1]], startZoom);
 
     L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {

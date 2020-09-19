@@ -1,14 +1,9 @@
-body, html {	margin: 0;	padding: 0; }
-
-.container {}
-
-
-.th1 {
+.myrout__th1 {
     font-size: 10px;
     color: darkgray
 }
 
-.navigate-button {
+.myrout__navigate-button {
     background-repeat: no-repeat;
     background-position: 0 0;
     background-color: transparent;
@@ -18,28 +13,28 @@ body, html {	margin: 0;	padding: 0; }
     width: 20px;
 }
 
-.navigate-button.next.enabled{
+.myrout__navigate-button.next.enabled{
     background-image: url("./ico/next-blue.png");
     cursor: pointer;
 }
 
-.navigate-button.next.disabled{
+.myrout__navigate-button.next.disabled{
     background-image: url("./ico/next-gray.png");
 }
-.navigate-button.prev.enabled{
+.myrout__navigate-button.prev.enabled{
     background-image: url("./ico/prev-blue.png");
     cursor: pointer;
 }
-.navigate-button.prev.disabled{
+.myrout__navigate-button.prev.disabled{
     background-image: url("./ico/prev-gray.png");
 }
 
-.myrout-map {
+.myrout__map {
     height: 100%;
     padding: 0;
     border: 1px solid
 }
-.myrout-infoPanel {
+.myrout__infoPanel {
     width: 100%;
     border:1px solid;
     border-top: none;
