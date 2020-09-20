@@ -1,32 +1,22 @@
 <!--блок для вставки в предназначенные для виджета элементы страницы-->
-<div class="myrout__map"></div>
-<div class="myrout__infoPanel">
-    <div  style="padding: 4px">
+<div style="position:absolute; z-index: 2; background-color: rgba(255,255,255,0.7); width: 200px; height: 250px">
+    <div style="padding: 4px">
         <div class="myrout__navigate-button prev btn-prev" style="float: left; padding-left: 2px"></div>
         <div class="myrout__navigate-button next btn-next" style="float: left; padding-left: 8px"></div>
         <div class="infoPanel.title" style="float: left; padding-left: 8px; font-weight: bold"></div>
         <div style="clear: both"></div>
     </div>
-    <div class="infoPanel.text" style="padding: 4px">
-
+    <div style=" margin-left: 12px">
+        <div class="infoPanel.distance" style="padding: 4px; font-size: smaller; clear: both"
+             title="Пройденное расстояние"></div>
+        <div class="infoPanel.deltaH" style="padding: 4px;font-size: smaller;clear: both"
+             title="Набор/сброс высоты"></div>
+        <div class="infoPanel.time" style="padding: 4px;font-size: smaller;clear: both"
+             title="Время общее (в движении)"></div>
+        <div class="infoPanel.dates" style="padding: 4px;font-size: smaller;clear: both" title="Дата и время"></div>
     </div>
-    <table width="100%" >
-        <tr>
-<!--            <td class="myrout__th1">Начало,км</td>-->
-
-            <td class="myrout__th1">Дата и время</td>
-            <td class="myrout__th1">Длина, км</td>
-            <td class="myrout__th1">Набор/сбос высоты</td>
-            <td class="myrout__th1">Время общее (в движении)</td>
-
-        </tr>
-        <tr>
-<!--            <td class="infoPanel.beginning"></td>-->
-            <td class="infoPanel.dates"></td>
-            <td class="infoPanel.distance"></td>
-            <td class="infoPanel.deltaH"></td>
-            <td class="infoPanel.time"></td>
-
-        </tr>
-    </table>
+    <div class="infoPanel.text" style="padding: 4px;font-size: smaller; font-style: italic"></div>
 </div>
+<div style="z-index: 1" class="myrout__map"></div>
+
+

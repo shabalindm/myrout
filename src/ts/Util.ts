@@ -42,7 +42,6 @@ export class Util {
             const script =  document.currentScript || document.querySelector('script[src*="myrout.js"]');
             // @ts-ignore
             const libUrl = script.src;
-            debugger;
             this.libUrl = libUrl.split('myrout.js')[0];
             if(!this.libUrl){
                 throw new Error("libUrl not found" )

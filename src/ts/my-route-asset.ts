@@ -10,6 +10,7 @@ import {Interval} from "./model/Interval";
 import {Photo} from "./model/Photo";
 import {Mark} from "./model/Mark";
 import {Util} from "./Util";
+import {TrackModelService} from "./TrackModelService";
 
 
 const widgets = document.getElementsByClassName("trip-interactive-map");
@@ -41,6 +42,8 @@ for (const widget of widgets) {
         maxZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
     }).addTo(map);
+    //todo - это не должно быть здесь
+    map.zoomControl.setPosition("topright");
     let tMap = new TripMap(map);
     let tripViewer = new TripViewer(tMap, widget);
 
@@ -106,11 +109,11 @@ for (const widget of widgets) {
 
     for (const desc of photoDescriptions) {
         const photo = new Photo("photos/" + desc.file, desc.number, desc.name, desc.accuracy, desc.lat, desc.lng);//todo - hardcode photos/
-        trackModel.photos.set(desc.number, photo);
+        trackModel.photos.set(photo.url, photo);
     }
 
 
-    tripViewer.setModel(trackModel);
+    tripViewer.setModel(new TrackModelService(trackModel));
 
 }
 

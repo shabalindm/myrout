@@ -11,13 +11,16 @@ import {RouteInfo} from "./RouteInfo";
 import {TrackModel} from "./model/TrackModel";
 import {TrackSegment} from "./model/TrackSegment";
 import {LineString, MultiLineString} from "geojson";
+import {TrackModelService} from "./TrackModelService";
 
 /**
  * Карта с нанесенными на нее объектами
  */
 export class TripMap {
     private map: Map;
+    //todo -вроде не нужна
     private model: TrackModel;
+    private trackModelService: TrackModelService;
     private intervalSelectedListeners: Array<() => void> = [];
 
 
@@ -28,15 +31,18 @@ export class TripMap {
         this.map = map;
     }
 
-    public setModel(model: TrackModel) {
-        this.model = model;
+    public setModel(trackModelService: TrackModelService) {
+        this.trackModelService =  trackModelService;
+        this.model = trackModelService.model;
+        const model = this.model;
         // L.marker([51.5, -0.09]).addTo(this.map)
         //     .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
         //     .openPopup();
+        const map = this.map;
         model.segments.forEach((track: TrackSegment, index: number) => {
             const latLngs = track.points.map((tp: TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
             const trackLine = L.polyline(latLngs, {weight: 4, opacity: 0.6});
-            trackLine.addTo(this.map);
+            trackLine.addTo(map);
 
             this.addTrackOnClickListener(trackLine, track);
         });
@@ -53,9 +59,9 @@ export class TripMap {
 
         model.photos.forEach((photo)=>{
             const marker = L.marker([photo.lat,  photo.lon], {icon: photoIcon});
-            marker.addTo(this.map);
+            marker.addTo(map);
 
-            var photoImg = '<img src=' + photo.url +   ' height="300px"/>'
+            var photoImg = '<img src=' + photo.url +   ' height="120px"/>'
              + 'Фото ' + photo.number + '. ' + photo.name;
 
 
@@ -74,8 +80,8 @@ export class TripMap {
 
         model.marks.forEach(mark =>{
             const marker = L.marker([mark.lat,  mark.lng], {icon: markerIcon, opacity:50, title: mark.name});
-            marker.addTo(this.map);
-            var popup = `<b>${mark.name}</b><br/> ${mark.description}`
+            marker.addTo(map);
+            var popup = `<b>${mark.name}</b><br/> ${mark.description?mark.description: ''}`
 
 
             marker.bindPopup(popup,  {
@@ -85,13 +91,21 @@ export class TripMap {
         });
 
         //В помощь разработчику, чтобы он всегда мог найти координтаты места на карте
-        this.map.on('click', event => {
+        map.on('click', event => {
             // @ts-ignore
             const latlng = event.latlng;
             console.log(`"lat": ${latlng.lat.toFixed(6)}, "lng": ${latlng.lng.toFixed(6)}`)
         })
 
-        L.control.scale().addTo(this.map);
+        L.control.scale().addTo(map);
+
+        // map.whenReady(() => {
+        //     console.log('Map ready');
+        //     setTimeout(() => {
+        //         debugger;
+        //         map.invalidateSize();
+        //     }, 3000);
+        // });
     }
 
 
