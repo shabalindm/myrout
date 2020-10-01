@@ -4,6 +4,7 @@
 import {TripMap} from "./TripMap";
 import {TrackSegment} from "./model/TrackSegment";
 import {TrackModelService} from "./TrackModelService";
+import {Interval} from "./model/Interval";
 
 /**
  * Обрамление карты и управляющие элементы.
@@ -60,7 +61,7 @@ export class TripViewer {
                 this.render();
             }
         });
-        tripMap.addIntervalSelectedListener(() =>{
+        tripMap.addSelectionListener(() =>{
             this.highlightNavigationButtons();
             this.render();
         });
@@ -81,17 +82,10 @@ export class TripViewer {
     }
 
     private render(){
-        let interval = this.tripMap.getCurrentInterval();
+        let obj = this.tripMap.getSelected();
         const model = this.tripMap.getModel();
-        if(interval) {
-            const stat = this.trackModelService.getIntervalStatistic(interval);
-            this.title.innerHTML = TripViewer.stringify(interval.name);
-            this.description.innerHTML = TripViewer.stringify(interval.description);
-            this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
-            this.setDatesFields(stat.realEnd, stat.realBegin, stat.timeInMotion);
-            this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
 
-        } else {
+        if(!obj){
             const globalInterval = this.trackModelService.getGlobalInterval();
             const stat = this.trackModelService.getIntervalStatistic(globalInterval);
             this.title.innerHTML = TripViewer.stringify(model.name);
@@ -99,6 +93,19 @@ export class TripViewer {
             this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
             this.setDatesFields(stat.realEnd, stat.realBegin, stat.timeInMotion);
             this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
+        }
+
+        if(obj instanceof Interval) {
+            const interval = obj;
+            if (interval) {
+                const stat = this.trackModelService.getIntervalStatistic(interval);
+                this.title.innerHTML = TripViewer.stringify(interval.name);
+                this.description.innerHTML = TripViewer.stringify(interval.description);
+                this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
+                this.setDatesFields(stat.realEnd, stat.realBegin, stat.timeInMotion);
+                this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
+
+            }
         }
 
     }

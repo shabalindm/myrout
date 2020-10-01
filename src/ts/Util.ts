@@ -2,8 +2,10 @@ import {SequenceIF} from "./sequence/SequenceIF";
 import {Interval} from "./model/Interval";
 import {ArraySequence} from "./sequence/ArraySequence";
 import {TrackModel} from "./model/TrackModel";
+import {Binding} from "./sequence/Binding";
 
 export class Util {
+
     /**
      * Берем точку на треку, и выстраиваем от нее последовательность интервалов, которые ее покрывают.
      * Последовательность такая: сначала все интервалы, покрывающие точку, начиная с самого малого,

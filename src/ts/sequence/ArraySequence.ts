@@ -9,6 +9,9 @@ export class ArraySequence <T> implements SequenceIF<T> {
 
 
     constructor(array: Array<T>, cur: number, ) {
+        if(typeof cur == "undefined"){
+            throw new Error();
+        }
         this.array = array;
         this.cur = cur;
         this._from = 0;

@@ -50,7 +50,7 @@ export class TrackModelService {
         return this.intervalsStatistics.get(interval);
     }
 
-    private static getTrackStatistic(track: TrackSegment[], from: Date, to: Date): IntervalStatistic {
+    public static getTrackStatistic(track: TrackSegment[], from: Date, to: Date): IntervalStatistic {
         if(!(from < to)){
             throw new Error(`To date (${to}) must be after from date(${from})`)
         }
