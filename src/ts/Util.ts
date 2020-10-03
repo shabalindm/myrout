@@ -34,7 +34,7 @@ export class Util {
         covering.sort((a, b) =>  (a.to.getTime() - a.from.getTime()) - (b.to.getTime() - b.from.getTime()));//Начиная с самых коротких
 
         var cur = before.length;
-        return new ArraySequence(before.concat(covering).concat(after), cur);
+        return new ArraySequence(before.concat(covering).concat(after));
     }
 
     static libUrl:string;

@@ -5,7 +5,6 @@ import {TrackPoint} from "./model/TrackPoint";
 
 import {Interval} from "./model/Interval";
 import {ArraySequence} from "./sequence/ArraySequence";
-import {SequenceIF} from "./sequence/SequenceIF";
 import {Util} from "./Util";
 import {TrackModel} from "./model/TrackModel";
 import {TrackSegment} from "./model/TrackSegment";
@@ -22,15 +21,17 @@ export class TripMap {
     //todo -вроде не нужна
     private model: TrackModel;
     private trackModelService: TrackModelService;
-    private selectionListeners: Array<() => void> = [];
+    //последовательнось для пролистывания элементов модели.
+    private sequence: ArraySequence<Binding>;
+    private selectedObject: Interval|Marker = null;
 
-
+    //Подсветка объектов на карте
     private selectedLines: Polyline[] = [];
     private selectedMarker: Marker;
-    //привязанные к точкам трека и отсортированные в правильном порядке объекты модели
-    private sequenceArray: Binding [];
-    //последовательнось для пролистывания элементов модели.
-    private sequence: SequenceIF<Binding>;
+
+
+    //Срабатывают при выделение/снятии выделения элемента карты.
+    private selectionListeners: Array<() => void> = [];
 
     public constructor(map: Map) {
         this.map = map;
@@ -40,18 +41,17 @@ export class TripMap {
         this.trackModelService =  trackModelService;
         this.model = trackModelService.model;
         const model = this.model;
-        // L.marker([51.5, -0.09]).addTo(this.map)
-        //     .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
-        //     .openPopup();
         const map = this.map;
+
+        //наносим трек
         model.segments.forEach((track: TrackSegment, index: number) => {
             const latLngs = track.points.map((tp: TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
             const trackLine = L.polyline(latLngs, {weight: 4, opacity: 0.6});
             trackLine.addTo(map);
-
             this.addTrackOnClickListener(trackLine, track);
         });
 
+        //фотографии
         const photoIcon = L.icon({
             iconUrl: Util.getUrl('ico/camera.svg'),
 
@@ -69,7 +69,6 @@ export class TripMap {
             var photoImg = '<img src=' + photo.url +   ' height="120px"/>'
              + 'Фото ' + photo.number + '. ' + photo.name;
 
-
             marker.bindPopup(photoImg,  {
                 // @ts-ignore
                 maxWidth: "auto"
@@ -77,6 +76,7 @@ export class TripMap {
 
         });
 
+        //маркеры
         const markerIcon =  L.icon({
             iconUrl: Util.getUrl('ico/location.svg'),
             iconSize:     [20, 20],
@@ -91,7 +91,8 @@ export class TripMap {
             }
             );
         });
-        this.sequenceArray = this.getSequenceArray();
+
+        this.sequence = new ArraySequence<Binding>(this.trackModelService.getSequenceArray());
 
         //В помощь разработчику, чтобы он всегда мог найти координтаты места на карте
         map.on('click', event => {
@@ -102,30 +103,26 @@ export class TripMap {
 
         L.control.scale().addTo(map);
 
-        // map.whenReady(() => {
-        //     console.log('Map ready');
-        //     setTimeout(() => {
-        //         debugger;
-        //         map.invalidateSize();
-        //     }, 3000);
-        // });
     }
 
-
-
-    private addTrackOnClickListener(trackLine: Polyline<LineString | MultiLineString, any>, track: TrackSegment) {
+    private addTrackOnClickListener(trackLine: Polyline, track: TrackSegment) {
         trackLine.on('click', (event: LeafletEvent) => {
             // @ts-ignore
             let lat = event.latlng.lat;
             // @ts-ignore
             let lng = event.latlng.lng;
             let clickedPoint: TrackPoint = TripMap.findNearestPointIndex(new LatLng(lat, lng), track);
-            const [selectedInterval, selectedIndex] = TripMap.findMinCoveringInterval(this.sequenceArray, clickedPoint.date);
-            //Если тыкнули на уже выделенный интервал - снимаем выделение
-            if (this.sequence != null && selectedInterval != null && selectedInterval === this.sequence.current().object) {
-                this.sequence = null;
-            } else if(selectedInterval){
-                this.sequence = new ArraySequence(this.sequenceArray, selectedIndex);
+            if (!TripMap.findMinCoveringInterval(this.sequence, clickedPoint.date)) {
+                this.sequence.begin();
+                this.selectedObject = null;
+            } else {
+                const object = this.sequence.current().object;
+                if (object === this.selectedObject) { //Если тыкнули на уже выделенный интервал - снимаем выделение
+                    this.selectedObject = null;
+                    this.sequence.begin();
+                } else {
+                    this.selectedObject = object;
+                }
             }
             this.highlightSelected();
             this.fireSelected();
@@ -133,34 +130,37 @@ export class TripMap {
     }
 
     public next() {
-        if (this.sequence == null) {
-            this.sequence = new ArraySequence(this.sequenceArray, 0);
+        if (!this.selectedObject) {
+            this.sequence.begin();
         } else {
             if (this.sequence.hasNext()) {
                 this.sequence.next();
             }
         }
+        this.selectedObject = this.sequence.current().object
         this.highlightSelected();
     }
 
     public prev() {
-        if (this.sequence != null && this.sequence.hasPrev()) {
+        if (this.sequence.hasPrev()) {
             this.sequence.prev();
+            this.selectedObject = this.sequence.current().object;
         } else {
-            this.sequence = null;
+            this.selectedObject = null;
         }
+
         this.highlightSelected();
     }
 
     public hasNext(): boolean {
-        if (this.sequence == null) {
-            return this.sequenceArray.length > 0;
+        if (!this.selectedObject) {
+            return this.sequence.array.length > 0;
         }
         return this.sequence.hasNext();
     }
 
     public hasPrev() {
-        return this.sequence != null;
+        return !!this.selectedObject;
     }
 
     /**
@@ -183,73 +183,54 @@ export class TripMap {
         }
         return res;
     }
-//todo oчень похожая функция, надо оптимизировать.
-    private static findNearestTrackPoint(target: LatLng, model: TrackModel): TrackPoint {
-        let res = model.segments[0].points[0];
-        for (const segment of model.segments) {
-            let dist = TripMap.roughDistance(segment.points[0], target);//todo - может, нужна точная функция
-
-            for (const point of segment.points) {
-                const dist1 = TripMap.roughDistance(point, target);
-                if (dist > dist1) {
-                    dist = dist1;
-                    res = point;
-                }
-            }
-        }
-        return res;
-    }
 
     private static roughDistance(p1: LatLng, p2: LatLng) {
         return Math.abs(p1.lat - p2.lat) + Math.abs(p1.lng - p2.lng)
     }
 
     public select(obj: any) {
-        for (let i = 0; i < this.sequenceArray.length; i++) {
-            if (this.sequenceArray[i].object == obj) {
-                this.sequence = new ArraySequence(this.sequenceArray, i);
-            }
-        }
-        //подсвечиваем объект.
+        this.sequence.goTo(b => b.object == 0);
+        this.selectedObject = this.sequence.current().object;
         this.highlightSelected();
-        //слушателей selected не дергаем, ибо вызвали снаружи
-
     }
+
     private highlightSelected() {
         //очищаем предыдущее выделение
         for (const line of this.selectedLines) {
             line.remove();
         }
+        this.selectedLines =[];
+
         if(this.selectedMarker) {
             this.selectedMarker.remove();
         }
 
-        if (this.sequence) {
-            let obj = this.sequence.current().object;
+        if (this.selectedObject) {
+            let obj = this.selectedObject;
 
-            if(obj instanceof Interval) {
+            if (obj instanceof Interval) {
                 const interval = obj;
-                if (interval) {
-                    for (const segment of this.model.segments) {
-                        let latLngs = [];
-                        //todo - можно оптимизировать
-                        for (const point of segment.points) {
-                            if (point.date >= interval.from && point.date <= interval.to) {
-                                latLngs.push(new LatLng(point.lat, point.lng));
-                            }
+
+                for (const segment of this.model.segments) {
+                    let latLngs = [];
+                    //todo - можно оптимизировать
+                    for (const point of segment.points) {
+                        if (point.date >= interval.from && point.date <= interval.to) {
+                            latLngs.push(new LatLng(point.lat, point.lng));
                         }
-                        let trackLine = L.polyline(latLngs, {
-                            color: "yellow",
-                            weight: 7,
-                            opacity: 0.8,
-                            bubblingMouseEvents: true
-                        });
-                        this.selectedLines.push(trackLine);
-                        trackLine.addTo(this.map);
-                        //новая линия перекрывает старую, так что на нее надо слушатель таки повесить (как сделать по-другому не разобрался)
-                        this.addTrackOnClickListener(trackLine, segment);
                     }
+                    let trackLine = L.polyline(latLngs, {
+                        color: "yellow",
+                        weight: 7,
+                        opacity: 0.8,
+                        bubblingMouseEvents: true
+                    });
+                    this.selectedLines.push(trackLine);
+                    trackLine.addTo(this.map);
+                    //новая линия перекрывает старую, так что на нее надо слушатель таки повесить (как сделать по-другому не разобрался)
+                    this.addTrackOnClickListener(trackLine, segment);
                 }
+
             } else if (obj instanceof Mark) {
                 const markerIcon = L.icon({
                     iconUrl: Util.getUrl('ico/location-highlite.svg'),
@@ -271,76 +252,8 @@ export class TripMap {
         }
     }
 
-
-
-    private bindObjects(): Binding [] {
-        const res : Binding []= [];
-
-        for (const photo of this.model.photos.values()) {   //todo сложность алгоритма n*m
-          const point = TripMap.findNearestTrackPoint(new LatLng(photo.lat, photo.lon), this.model) ;
-          res.push(new Binding(point, photo));
-        }
-        for (const photo of this.model.marks) {   //todo сложность алгоритма n*m
-            const point = TripMap.findNearestTrackPoint(new LatLng(photo.lat, photo.lng), this.model) ;
-            res.push(new Binding(point, photo));
-        }
-
-        return res;
-    }
-
-    private bindIntervals(): Binding [] {
-        const res = [];
-
-        for (const interval of this.model.intervals) {
-            for (const trackSegment of this.model.segments) {
-                if (trackSegment.points.length == 0) {
-                    continue;
-                }
-                const fromIndex = TrackModelService.binarySearch(trackSegment.points,
-                    (point: TrackPoint): boolean => {
-                        return point.date >= interval.from;
-                    }
-                );
-                if (fromIndex != trackSegment.points.length) {
-                    res.push(new Binding(trackSegment.points[fromIndex], interval));
-                }
-
-            }
-        }
-        return res;
-    }
-
-    public getSequenceArray() {
-        return this.bindObjects().concat(this.bindIntervals()).sort(
-            //Порядок сортировки:
-            //1. По дате
-            //2. Интервал больше объектов;
-            //3. Больший интервал - больше
-            (a, b) => {
-                const dateDiff = a.point.date.getTime() - b.point.date.getTime();
-                if(dateDiff != 0 ) {
-                    return dateDiff;
-                }
-                else if (a.object instanceof Interval && ! (b.object instanceof Interval)){
-                    return -1;
-                }
-                else if (!(a.object instanceof Interval) && b.object instanceof Interval){
-                    return 1;
-                }
-                else if (a.object instanceof Interval && b.object instanceof Interval){
-                    return b.object.to.getTime() - a.object.to.getTime();
-                }
-
-                return dateDiff;
-            }
-
-        );
-    }
-
     public getSelected(): any {
-        if (this.sequence)
-            return this.sequence.current().object;
-        return null;
+        return this.selectedObject;
     }
 
     public getModel(): TrackModel {
@@ -356,22 +269,31 @@ export class TripMap {
         this.selectionListeners.forEach(l => l());
     }
 
-    private static findMinCoveringInterval(arr: Array<Binding>, date: Date): [Interval, number] {
-        let res: [Interval, number] = [null, undefined];
+    private static findMinCoveringInterval(sequence: ArraySequence<Binding>, date: Date): boolean {
+        const arr = sequence.array;
+        let resIndex = undefined;
 
         for (let i = 0; i < arr.length; i++) {
             let binding = arr[i];
             if (binding.object instanceof Interval) {
                 const interval = binding.object;
                 if (interval.from <= date && interval.to >= date) {
-                    const oldInterval = res[0];
-                    if (!oldInterval || oldInterval.to.getTime() - oldInterval.from.getTime() > interval.to.getTime() - interval.from.getTime()) {
-                        res = [interval, i];
+                    if (!resIndex) {
+                        resIndex = i;
+                    } else {
+                        const oldInterval = arr[resIndex].object;
+                        if (!oldInterval || oldInterval.to.getTime() - oldInterval.from.getTime() > interval.to.getTime() - interval.from.getTime()) {
+                            resIndex = i
+                        }
                     }
                 }
             }
         }
-        return res;
+        if(resIndex){
+            sequence.cur = resIndex;
+            return true;
+        }
+        return false;
     }
 
     private clearSelection() {

@@ -16,7 +16,7 @@ export class SequenceListSequence<T> implements SequenceIF<T> {
         //отфильтруем пустые, без них проще
         let sequences = sequenses.filter((i) => i.current());
         if(sequences.length == 0){//вернем пустую последовательность
-            return new ArraySequence([], 0);
+            return new ArraySequence([]);
         }
         return new SequenceListSequence(sequenses, cur);
     }

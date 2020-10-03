@@ -2,62 +2,64 @@ import {SequenceIF} from "./SequenceIF";
 
 export class ArraySequence <T> implements SequenceIF<T> {
 
-    private array:Array<T>;
-    private cur : number;
-    private _from:number;
-    private _to:number;
+    private readonly _array:Array<T>;
+    private _cur : number = 0;
+    private readonly maxIndex:number;
+
+    constructor(array: Array<T>) {
+        this._array = array;
+        this.maxIndex = this._array.length - 1;
+    }
 
 
-    constructor(array: Array<T>, cur: number, ) {
-        if(typeof cur == "undefined"){
-            throw new Error();
+    set cur(value: number) {
+        this._cur = value;
+    }
+
+    public goTo(predicate: (arg0: T) => boolean){
+        const arr = this._array;
+        for (let i = 0; i < arr.length; i++) {
+            if (predicate(arr[i])) {
+                this._cur = i;
+                break;
+            }
         }
-        this.array = array;
-        this.cur = cur;
-        this._from = 0;
-        this._to = array.length;
-    }
-
-
-    set from(value: number) {
-        this._from = value;
-    }
-
-    set to(value: number) {
-        this._to = value;
     }
 
     hasNext(): boolean {
-        return this.cur < this._to - 1;
+        return this._cur < this.maxIndex;
     }
 
     hasPrev(): boolean {
-        return this.cur > this._from;
+        return this._cur > 0;
     }
 
     next(): T {
-        this.cur++;
-        return this.array[this.cur]
+        this._cur++;
+        return this._array[this._cur]
     }
 
     prev(): T {
-        this.cur--;
-        return this.array[this.cur]
+        this._cur--;
+        return this._array[this._cur]
     }
 
     begin(): T {
-        this.cur = this._from;
-        return this.array[this.cur]
+        this._cur = 0;
+        return this._array[this._cur]
     }
 
     end(): T {
-        this.cur = this._to - 1;
-        return this.array[this.cur]
+        this._cur = this._array.length - 1;
+        return this._array[this._cur]
     }
 
     current(): T {
-        return this.array[this.cur];
+        return this._array[this._cur];
     }
 
 
+    get array(): Array<T> {
+        return this._array;
+    }
 }

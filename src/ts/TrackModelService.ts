@@ -6,6 +6,9 @@ import {Interval} from "./model/Interval";
 import {IntervalStatistic} from "./IntervalStatistic";
 import {TrackSegment} from "./model/TrackSegment";
 import {TrackPoint} from "./model/TrackPoint";
+import {ArraySequence} from "./sequence/ArraySequence";
+import {Binding} from "./sequence/Binding";
+import {LatLng} from "leaflet";
 
 
 export class TrackModelService {
@@ -185,5 +188,91 @@ export class TrackModelService {
         }
         return search(ar, 0, ar.length - 1);
     }
-    
+
+    private bindObjects(): Binding [] {
+        const res : Binding []= [];
+
+        for (const photo of this.model.photos.values()) {   //todo сложность алгоритма n*m
+            const point = TrackModelService.findNearestTrackPoint(new LatLng(photo.lat, photo.lon), this.model) ;
+            res.push(new Binding(point, photo));
+        }
+        for (const photo of this.model.marks) {   //todo сложность алгоритма n*m
+            const point = TrackModelService.findNearestTrackPoint(new LatLng(photo.lat, photo.lng), this.model) ;
+            res.push(new Binding(point, photo));
+        }
+
+        return res;
+    }
+
+
+//todo есть oчень похожая функция, надо оптимизировать.
+    private static findNearestTrackPoint(target: LatLng, model: TrackModel): TrackPoint {
+        let res = model.segments[0].points[0];
+        for (const segment of model.segments) {
+            let dist = TrackModelService.roughDistance(segment.points[0], target);//todo - может, нужна точная функция
+
+            for (const point of segment.points) {
+                const dist1 = TrackModelService.roughDistance(point, target);
+                if (dist > dist1) {
+                    dist = dist1;
+                    res = point;
+                }
+            }
+        }
+        return res;
+    }
+
+    //todo - дубликат
+    private static roughDistance(p1: LatLng, p2: LatLng) {
+        return Math.abs(p1.lat - p2.lat) + Math.abs(p1.lng - p2.lng)
+    }
+
+    private bindIntervals(): Binding [] {
+        const res = [];
+
+        for (const interval of this.model.intervals) {
+            for (const trackSegment of this.model.segments) {
+                if (trackSegment.points.length == 0) {
+                    continue;
+                }
+                const fromIndex = TrackModelService.binarySearch(trackSegment.points,
+                    (point: TrackPoint): boolean => {
+                        return point.date >= interval.from;
+                    }
+                );
+                if (fromIndex != trackSegment.points.length) {
+                    res.push(new Binding(trackSegment.points[fromIndex], interval));
+                }
+
+            }
+        }
+        return res;
+    }
+
+    public getSequenceArray() {
+        return this.bindObjects().concat(this.bindIntervals()).sort(
+            //Порядок сортировки:
+            //1. По дате
+            //2. Интервал больше объектов;
+            //3. Больший интервал - больше
+            (a, b) => {
+                const dateDiff = a.point.date.getTime() - b.point.date.getTime();
+                if(dateDiff != 0 ) {
+                    return dateDiff;
+                }
+                else if (a.object instanceof Interval && ! (b.object instanceof Interval)){
+                    return -1;
+                }
+                else if (!(a.object instanceof Interval) && b.object instanceof Interval){
+                    return 1;
+                }
+                else if (a.object instanceof Interval && b.object instanceof Interval){
+                    return b.object.to.getTime() - a.object.to.getTime();
+                }
+
+                return dateDiff;
+            }
+
+        );
+    }
 }
