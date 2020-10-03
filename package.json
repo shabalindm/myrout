@@ -6,7 +6,7 @@
   "main": "webpack.config.js",
   "scripts": {
     "test": "webpack --config testentry/webpack.mocha-test.js",
-    "start": "webpack-dev-server  --env.release=0",
+    "start": "webpack-dev-server --open --env.release=0",
     "build": "webpack --env.release=1"
   },
   "repository": {

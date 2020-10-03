@@ -48,15 +48,15 @@ export class TripViewer {
         this.deltaH = this.get("infoPanel.deltaH");
 
         this.btnNext.addEventListener('click', () => {
-            if (this.tripMap.hasNextInterval()) {
-                tripMap.nextInterval();
+            if (this.tripMap.hasNext()) {
+                tripMap.next();
                 this.highlightNavigationButtons();
                 this.render();
             }
         });
         this.btnPrev.addEventListener('click', () => {
-            if (this.tripMap.hasPrevInterval()) {
-                tripMap.prevInterval();
+            if (this.tripMap.hasPrev()) {
+                tripMap.prev();
                 this.highlightNavigationButtons();
                 this.render();
             }
@@ -159,8 +159,8 @@ export class TripViewer {
 
 
     private highlightNavigationButtons() {
-            this.enableNavigateButton(this.btnNext, this.tripMap.hasNextInterval());
-            this.enableNavigateButton(this.btnPrev,  this.tripMap.hasPrevInterval());
+            this.enableNavigateButton(this.btnNext, this.tripMap.hasNext());
+            this.enableNavigateButton(this.btnPrev,  this.tripMap.hasPrev());
     }
 
     private enableNavigateButton(btn: HTMLElement, enable: boolean) {

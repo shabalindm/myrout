@@ -12,6 +12,7 @@ import {TrackSegment} from "./model/TrackSegment";
 import {LineString, MultiLineString} from "geojson";
 import {TrackModelService} from "./TrackModelService";
 import {Binding} from "./sequence/Binding";
+import {Mark} from "./model/Mark";
 
 /**
  * Карта с нанесенными на нее объектами
@@ -25,6 +26,7 @@ export class TripMap {
 
 
     private selectedLines: Polyline[] = [];
+    private selectedMarker: Marker;
     //привязанные к точкам трека и отсортированные в правильном порядке объекты модели
     private sequenceArray: Binding [];
     //последовательнось для пролистывания элементов модели.
@@ -84,8 +86,8 @@ export class TripMap {
         model.marks.forEach(mark =>{
             const marker: Marker = L.marker([mark.lat,  mark.lng], {icon: markerIcon, opacity:50, title: mark.name});
             marker.addTo(map).on('click', (event: LeafletEvent) => {
-             // this.clearSelection();
-
+                this.select(mark);
+                this.fireSelected();
             }
             );
         });
@@ -130,7 +132,7 @@ export class TripMap {
         });
     }
 
-    public nextInterval() {
+    public next() {
         if (this.sequence == null) {
             this.sequence = new ArraySequence(this.sequenceArray, 0);
         } else {
@@ -141,7 +143,7 @@ export class TripMap {
         this.highlightSelected();
     }
 
-    public prevInterval() {
+    public prev() {
         if (this.sequence != null && this.sequence.hasPrev()) {
             this.sequence.prev();
         } else {
@@ -150,14 +152,14 @@ export class TripMap {
         this.highlightSelected();
     }
 
-    public hasNextInterval(): boolean {
+    public hasNext(): boolean {
         if (this.sequence == null) {
             return this.sequenceArray.length > 0;
         }
         return this.sequence.hasNext();
     }
 
-    public hasPrevInterval() {
+    public hasPrev() {
         return this.sequence != null;
     }
 
@@ -202,15 +204,29 @@ export class TripMap {
         return Math.abs(p1.lat - p2.lat) + Math.abs(p1.lng - p2.lng)
     }
 
+    public select(obj: any) {
+        for (let i = 0; i < this.sequenceArray.length; i++) {
+            if (this.sequenceArray[i].object == obj) {
+                this.sequence = new ArraySequence(this.sequenceArray, i);
+            }
+        }
+        //подсвечиваем объект.
+        this.highlightSelected();
+        //слушателей selected не дергаем, ибо вызвали снаружи
 
+    }
     private highlightSelected() {
-        //очишаем предыдущее выделение
+        //очищаем предыдущее выделение
         for (const line of this.selectedLines) {
             line.remove();
+        }
+        if(this.selectedMarker) {
+            this.selectedMarker.remove();
         }
 
         if (this.sequence) {
             let obj = this.sequence.current().object;
+
             if(obj instanceof Interval) {
                 const interval = obj;
                 if (interval) {
@@ -233,11 +249,30 @@ export class TripMap {
                         //новая линия перекрывает старую, так что на нее надо слушатель таки повесить (как сделать по-другому не разобрался)
                         this.addTrackOnClickListener(trackLine, segment);
                     }
-
                 }
+            } else if (obj instanceof Mark) {
+                const markerIcon = L.icon({
+                    iconUrl: Util.getUrl('ico/location-highlite.svg'),
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 20]
+                });
+
+                const marker: Marker = L.marker([obj.lat, obj.lng], {
+                    icon: markerIcon,
+                    opacity: 50,
+                    title: obj.name
+                });
+                marker.addTo(this.map).on('click', (event: LeafletEvent) => {
+                        this.clearSelection();
+                    }
+                );
+                this.selectedMarker = marker;
             }
         }
     }
+
+
+
     private bindObjects(): Binding [] {
         const res : Binding []= [];
 
@@ -337,5 +372,11 @@ export class TripMap {
             }
         }
         return res;
+    }
+
+    private clearSelection() {
+        this.sequence = null;
+        this.highlightSelected();
+        this.fireSelected();
     }
 }
