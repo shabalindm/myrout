@@ -12,6 +12,7 @@ import {LineString, MultiLineString} from "geojson";
 import {TrackModelService} from "./TrackModelService";
 import {Binding} from "./sequence/Binding";
 import {Mark} from "./model/Mark";
+import {Photo} from "./model/Photo";
 
 /**
  * Карта с нанесенными на нее объектами
@@ -69,10 +70,11 @@ export class TripMap {
             var photoImg = '<img src=' + photo.url +   ' height="120px"/>'
              + 'Фото ' + photo.number + '. ' + photo.name;
 
-            marker.bindPopup(photoImg,  {
-                // @ts-ignore
-                maxWidth: "auto"
-            })
+            marker.addTo(map).on('click', (event: LeafletEvent) => {
+                    this.select(photo);
+                    this.fireSelected();
+                }
+            );
 
         });
 
@@ -189,7 +191,7 @@ export class TripMap {
     }
 
     public select(obj: any) {
-        this.sequence.goTo(b => b.object == 0);
+        this.sequence.goTo(b => b.object == obj);
         this.selectedObject = this.sequence.current().object;
         this.highlightSelected();
     }
@@ -203,6 +205,7 @@ export class TripMap {
 
         if(this.selectedMarker) {
             this.selectedMarker.remove();
+            this.selectedMarker = null;
         }
 
         if (this.selectedObject) {
@@ -231,17 +234,32 @@ export class TripMap {
                     this.addTrackOnClickListener(trackLine, segment);
                 }
 
-            } else if (obj instanceof Mark) {
+            } else if (obj instanceof Mark) {//не используется
                 const markerIcon = L.icon({
                     iconUrl: Util.getUrl('ico/location-highlite.svg'),
                     iconSize: [20, 20],
-                    iconAnchor: [10, 20]
                 });
 
                 const marker: Marker = L.marker([obj.lat, obj.lng], {
                     icon: markerIcon,
                     opacity: 50,
                     title: obj.name
+                });
+                marker.addTo(this.map).on('click', (event: LeafletEvent) => {
+                        this.clearSelection();
+                    }
+                );
+                this.selectedMarker = marker;
+            }
+            else if (obj instanceof Photo) {
+                const markerIcon = L.icon({
+                    iconUrl: Util.getUrl('ico/camera-selected.svg'),
+                    iconSize: [30, 30],
+                });
+
+                const marker: Marker = L.marker([obj.lat, obj.lon], {
+                    icon: markerIcon,
+                    opacity: 50
                 });
                 marker.addTo(this.map).on('click', (event: LeafletEvent) => {
                         this.clearSelection();
@@ -297,8 +315,12 @@ export class TripMap {
     }
 
     private clearSelection() {
-        this.sequence = null;
+        this.selectedObject = null;
         this.highlightSelected();
         this.fireSelected();
+    }
+
+    getMap() {
+        return this.map;
     }
 }

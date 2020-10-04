@@ -6,7 +6,6 @@ import {Interval} from "./model/Interval";
 import {IntervalStatistic} from "./IntervalStatistic";
 import {TrackSegment} from "./model/TrackSegment";
 import {TrackPoint} from "./model/TrackPoint";
-import {ArraySequence} from "./sequence/ArraySequence";
 import {Binding} from "./sequence/Binding";
 import {LatLng} from "leaflet";
 
@@ -62,12 +61,12 @@ export class TrackModelService {
         var altitudeGain: number = 0;
         var altitudeLoss: number = 0;
         var timeInMotion: number = 0;
-        var maxLat: number = - 90;
-        var maxLng: number = - 180;
-        var minLat: number = 90;
-        var minLng: number = 180;
-        var realBegin: Date = null;
-        var realEnd: Date = null;
+        var maxLat: number = -1000;
+        var maxLng: number = -1000;
+        var minLat: number = 1000;
+        var minLng: number = 1000;
+        var begin: TrackPoint = null;
+        var end: TrackPoint = null;
         
         for (const trackSegment of track) {
             if(trackSegment.points.length == 0){
@@ -92,18 +91,18 @@ export class TrackModelService {
             for (let i = fromIndex; i < toIndex; i++) {
                 let p = trackSegment.points[i];
                 maxLat = Math.max(p.lat, maxLat);
-                maxLng = Math.max(p.lat, maxLng);
-                minLat = Math.max(p.lat, minLat);
-                minLng = Math.max(p.lat, minLng);
+                maxLng = Math.max(p.lng, maxLng);
+                minLat = Math.min(p.lat, minLat);
+                minLng = Math.min(p.lng, minLng);
             }
             //Начало и конец интервала
-            const begin = trackSegment.points[fromIndex].date;
-            if (realBegin == null || realBegin > begin) {
-                realBegin = begin;
+            const first = trackSegment.points[fromIndex];
+            if (begin == null || begin.date > first.date) {
+                begin = first;
             }
-            const end = trackSegment.points[toIndex - 1].date;
-            if (realEnd == null || realEnd < end) {
-                realEnd = end;
+            const last = trackSegment.points[toIndex - 1];
+            if (end == null || end.date < last.date) {
+                end = last;
             }
             
             let deltaH = 0;
@@ -148,8 +147,8 @@ export class TrackModelService {
             altitudeGain,
             altitudeLoss,
             timeInMotion,
-            realBegin,
-            realEnd,
+            begin,
+            end,
             maxLat,
             maxLng,
             minLat,
@@ -196,10 +195,10 @@ export class TrackModelService {
             const point = TrackModelService.findNearestTrackPoint(new LatLng(photo.lat, photo.lon), this.model) ;
             res.push(new Binding(point, photo));
         }
-        for (const photo of this.model.marks) {   //todo сложность алгоритма n*m
-            const point = TrackModelService.findNearestTrackPoint(new LatLng(photo.lat, photo.lng), this.model) ;
-            res.push(new Binding(point, photo));
-        }
+        // for (const photo of this.model.marks) {  не используем
+        //     const point = TrackModelService.findNearestTrackPoint(new LatLng(photo.lat, photo.lng), this.model) ;
+        //     res.push(new Binding(point, photo));
+        // }
 
         return res;
     }

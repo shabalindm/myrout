@@ -5,6 +5,10 @@ import {TripMap} from "./TripMap";
 import {TrackSegment} from "./model/TrackSegment";
 import {TrackModelService} from "./TrackModelService";
 import {Interval} from "./model/Interval";
+import {Mark} from "./model/Mark";
+import {Photo} from "./model/Photo";
+import {Bounds, LatLng, LatLngBounds} from "leaflet";
+import L = require("leaflet");
 
 /**
  * Обрамление карты и управляющие элементы.
@@ -25,7 +29,27 @@ export class TripViewer {
     private time: HTMLElement;
     private dates: HTMLElement;
     private deltaH: HTMLElement;
+    private intervalBlock: HTMLElement;
+    private photoBlock: HTMLElement;
+    private photoText: HTMLElement;
+    private photoImg: HTMLElement;
     private trackModelService: TrackModelService;
+
+    private mounts={
+        0:'янв',
+        1:'фев',
+        2:'мар',
+        3:'апр',
+        4:'мая',
+        5:'июн',
+        6:'июл',
+        7:'авг',
+        8:'сен',
+        9:'окт',
+        10:'ноя',
+        11:'дек',
+
+    }
 
 
 
@@ -46,6 +70,10 @@ export class TripViewer {
         this.time = this.get("infoPanel.time");
         this.dates = this.get("infoPanel.dates");
         this.deltaH = this.get("infoPanel.deltaH");
+        this.intervalBlock = this.get("infoPanel.interval-block");
+        this.photoBlock = this.get("infoPanel.photo-block");
+        this.photoImg = this.get("infoPanel.photo-img");
+        this.photoText = this.get("infoPanel.photo-text");
 
         this.btnNext.addEventListener('click', () => {
             if (this.tripMap.hasNext()) {
@@ -86,36 +114,115 @@ export class TripViewer {
         const model = this.tripMap.getModel();
 
         if(!obj){
+            this.intervalBlock.style.display = 'block';
+            this.photoBlock.style.display = 'none';
             const globalInterval = this.trackModelService.getGlobalInterval();
             const stat = this.trackModelService.getIntervalStatistic(globalInterval);
             this.title.innerHTML = TripViewer.stringify(model.name);
             this.description.innerHTML = TripViewer.stringify(model.description);
             this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
-            this.setDatesFields(stat.realEnd, stat.realBegin, stat.timeInMotion);
+            this.setDatesFields(stat.end.date, stat.begin.date, stat.timeInMotion);
             this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
         }
 
-        if(obj instanceof Interval) {
+        if (obj instanceof Interval) {
+            this.intervalBlock.style.display = 'block';
+            this.photoBlock.style.display = 'none';
             const interval = obj;
-            if (interval) {
-                const stat = this.trackModelService.getIntervalStatistic(interval);
-                this.title.innerHTML = TripViewer.stringify(interval.name);
-                this.description.innerHTML = TripViewer.stringify(interval.description);
-                this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
-                this.setDatesFields(stat.realEnd, stat.realBegin, stat.timeInMotion);
-                this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
+            const stat = this.trackModelService.getIntervalStatistic(interval);
+            this.title.innerHTML = TripViewer.stringify(interval.name);
+            this.description.innerHTML = TripViewer.stringify(interval.description);
+            this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
+            this.setDatesFields(stat.end.date, stat.begin.date, stat.timeInMotion);
+            this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
+
+            const map = this.tripMap.getMap();
+            const bounds = map.getBounds();
+            const w = bounds.getEast() - bounds.getWest();
+            const h = bounds.getNorth() - bounds.getSouth();
+            const innerSouth = bounds.getSouth() + h / 10;
+            const innerWest = bounds.getWest()  + w / 10;
+            const innerNorth = bounds.getNorth()  - h / 5;
+            const innerEast = bounds.getEast()  - w / 10;
+
+            if (stat.maxLat - stat.minLat > innerNorth - innerSouth
+                || stat.maxLng - stat.minLng > innerEast - innerWest) {
+                const w1 = stat.maxLng - stat.minLng;
+                const h1 = stat.maxLat - stat.minLat;
+                map.fitBounds(new LatLngBounds(
+                    new LatLng(stat.minLat - h1 / 10, stat.minLng - w1 / 10),
+                    new LatLng(stat.maxLat +  h1 / 3, stat.maxLng +  w1 / 10)
+                ), {
+                    animate: true,
+                });
+            } else {
+                // let centerLat = bounds.getCenter().lat;
+                // let centerLng = bounds.getCenter().lng;
+                // if (stat.maxLat > innerNorth){
+                //     centerLat += (stat.maxLat - innerNorth)
+                // }
+                // if ( stat.minLat < innerSouth){
+                //     centerLat -= (innerSouth-stat.minLat )
+                // }
+                // if (stat.maxLng > innerEast){
+                //     centerLat += (stat.maxLng - innerEast)
+                // }
+                // if ( stat.minLng < innerWest){
+                //     centerLat -= (innerWest - stat.minLng)
+                // }
+                if(stat.maxLat > innerNorth || stat.minLat < innerSouth || stat.maxLng > innerEast || stat.minLng < innerWest) {
+                    map.panTo(new LatLng((stat.maxLat + stat.minLat) / 2, (stat.maxLng + stat.minLng) / 2));
+                }
+
 
             }
+
+        }
+        if (obj instanceof Mark) {//не используется
+            this.intervalBlock.style.display = 'block';
+            this.photoBlock.style.display = 'none';
+            this.title.innerHTML = TripViewer.stringify(obj.name);
+            this.description.innerHTML = TripViewer.stringify(obj.description);
+            this.distance.innerHTML = '';
+            this.time.innerHTML = '';
+            this.dates.innerHTML = '';
+            this.deltaH.innerHTML = '';
+        }
+        if(obj instanceof Photo){
+            this.intervalBlock.style.display = 'none';
+            this.photoBlock.style.display = 'block';
+            this.title.innerHTML = 'Фото ' + TripViewer.stringify(obj.number);
+            this.photoText.innerHTML = 'Фото ' + TripViewer.stringify(obj.number) +'. ' + obj.name;
+            this.photoImg.setAttribute("src", obj.url.toString());
+            const map = this.tripMap.getMap();
+
+            const bounds = map.getBounds();
+            map.panTo(new LatLng(obj.lat - (bounds.getSouth() - bounds.getNorth())/4 , obj.lon), {animate:true})
         }
 
     }
 
+    private static getInnerBounds(map: L.Map) {
+        let bounds = map.getBounds();
+        const w = bounds.getEast() - bounds.getWest();
+        const h = bounds.getNorth() - bounds.getSouth();
+        bounds = new LatLngBounds(
+            new LatLng(bounds.getSouth() - h / 10, bounds.getWest()  - w / 10),
+            new LatLng(bounds.getNorth()  + w / 5, bounds.getEast()  + w / 10));
+        return bounds;
+    }
+
     private static getDistanceText(trackLength: number) {
-        return (trackLength / 1000).toFixed(2) + ' км';
+        if(trackLength >= 1000) {
+            return (trackLength / 1000).toFixed(1) + ' км';
+        }
+        else {
+            return (trackLength / 1000).toFixed(2) + ' км';
+        }
     }
 
     private static getDeltaHText(gain: number, loss: number) {
-        return `+${Math.round(gain)} / ${Math.round(loss)} м`;
+        return `+${Math.round(gain)}/${Math.round(loss)} м`;
     }
 
     private static stringify(s: String):string {
@@ -128,10 +235,11 @@ export class TripViewer {
         const deltaTMillis = endDate.getTime() - beginDate.getTime();
         this.time.innerHTML = TripViewer.timeIntervalToString(deltaTMillis) + '(' + TripViewer.timeIntervalToString(timeInMotion)+')';
         if (TripViewer.datesAreOnSameDay(beginDate, endDate)) {
-            this.dates.innerHTML = this.formatDate(beginDate) + " - " + this.formatTime(endDate);
+            this.dates.innerHTML = this.formatTime(beginDate) + " - " + this.formatTime(endDate);
         } else {
-            this.dates.innerHTML = this.formatDate(beginDate) + " - " + this.formatDate(endDate);
+            this.dates.innerHTML = this.formatDateInterval(beginDate, endDate);
         }
+        this.dates.title = this.formatDateTime(beginDate) + " - " + this.formatDateTime(endDate);
     }
 
     private static timeIntervalToString(deltaTMillis: number) {
@@ -139,6 +247,7 @@ export class TripViewer {
         let hours = Math.floor(minutesTotal / 60);
         var minutes = minutesTotal % 60;
         return (hours == 0 ? '' : hours + ' ч ') + minutes + ' мин';
+       // return  hours + ':' + minutes;
     }
 
     static datesAreOnSameDay(first:Date, second:Date):boolean {
@@ -147,10 +256,30 @@ export class TripViewer {
         first.getDate() === second.getDate();
     }
 
-    private formatDate(beginDate: Date) {
+    private formatDateTime(date: Date) {
         // порнография
-        return beginDate.getFullYear() + '-' + ('0' + (beginDate.getMonth() + 1)).slice(-2) + '-' + ('0' + beginDate.getDate()).slice(-2)
-            + ' ' + ('0' + beginDate.getHours()).slice(-2) + ':' + ('0' + beginDate.getMinutes()).slice(-2);
+        return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2)
+            + ' ' + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
+    }
+
+    private formatDateInterval(first: Date, second: Date) {
+        const m1: number = first.getMonth();
+        const m2 = first.getMonth();
+        if (m1 == m2) {
+            return ('0' + first.getDate()).slice(-2) + ' - ' + ('0' + second.getDate()).slice(-2) + ' ' +
+                // @ts-ignore
+                this.mounts[m1];
+        }
+        else {
+            return ('0' + first.getDate()).slice(-2) + ' ' +
+                // @ts-ignore
+                this.mounts[m1]  +
+                ' - ' + ('0' + second.getDate()).slice(-2) + ' ' +
+                // @ts-ignore
+                this.mounts[m1];
+        }
+
+
     }
     private formatTime(beginDate: Date) {
         // порнография

@@ -43,7 +43,7 @@ for (const widget of widgets) {
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
     }).addTo(map);
     //todo - это не должно быть здесь
-    map.zoomControl.setPosition("topright");
+    map.zoomControl.setPosition("bottomright");
     let tMap = new TripMap(map);
     let tripViewer = new TripViewer(tMap, widget);
 
