@@ -2,7 +2,11 @@
 import {SequenceListSequence} from "../../src/ts/sequence/SequenceListSequence.ts";
 import {ArraySequence} from "../../src/ts/sequence/ArraySequence.ts";
 
-const assert = require('chai').assert;
+if (typeof window === 'undefined') { 
+    var assert = require('chai').assert; // для запуска в консоле NODE
+} else {
+    var assert = chai.assert; // для запуска в браузере
+}
 
 describe('SequenceListSequence',()=>{
 
