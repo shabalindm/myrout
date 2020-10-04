@@ -1,8 +1,12 @@
 import {ArraySequence} from "../../src/ts/sequence/ArraySequence.ts";
 
-const assert = require('chai').assert;
-
 describe('ArraySequence',()=>{
+
+    if (typeof window === 'undefined') { 
+        var assert = require('chai').assert; // для запуска в консоле NODE
+    } else {
+        var assert = chai.assert; // для запуска в браузере
+    }
 
     it('Методы пустой последовательности',()=>{
         let s = new ArraySequence([], 0);
