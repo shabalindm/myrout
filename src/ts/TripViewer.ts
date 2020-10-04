@@ -192,7 +192,7 @@ export class TripViewer {
             this.intervalBlock.style.display = 'none';
             this.photoBlock.style.display = 'block';
             this.title.innerHTML = 'Фото ' + TripViewer.stringify(obj.number);
-            this.photoText.innerHTML = 'Фото ' + TripViewer.stringify(obj.number) +'. ' + obj.name;
+            this.photoText.innerHTML = 'Фото ' + TripViewer.stringify(obj.number) +'. ' + TripViewer.stringify(obj.name);
             this.photoImg.setAttribute("src", obj.url.toString());
             const map = this.tripMap.getMap();
 

@@ -243,7 +243,10 @@ export class TripMap {
                 const marker: Marker = L.marker([obj.lat, obj.lng], {
                     icon: markerIcon,
                     opacity: 50,
-                    title: obj.name
+                    title: obj.name,
+                    riseOnHover: true,
+                    zIndexOffset:100
+
                 });
                 marker.addTo(this.map).on('click', (event: LeafletEvent) => {
                         this.clearSelection();
@@ -254,12 +257,13 @@ export class TripMap {
             else if (obj instanceof Photo) {
                 const markerIcon = L.icon({
                     iconUrl: Util.getUrl('ico/camera-selected.svg'),
-                    iconSize: [30, 30],
+                    iconSize: [40, 40]
                 });
 
                 const marker: Marker = L.marker([obj.lat, obj.lon], {
                     icon: markerIcon,
-                    opacity: 50
+                    opacity: 50,
+                    zIndexOffset:100
                 });
                 marker.addTo(this.map).on('click', (event: LeafletEvent) => {
                         this.clearSelection();
