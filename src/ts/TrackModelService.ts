@@ -249,7 +249,7 @@ export class TrackModelService {
     }
 
     public getSequenceArray() {
-        return this.bindObjects().concat(this.bindIntervals()).sort(
+        return this.bindIntervals().sort(
             //Порядок сортировки:
             //1. По дате
             //2. Интервал больше объектов;

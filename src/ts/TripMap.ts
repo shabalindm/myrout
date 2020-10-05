@@ -21,28 +21,34 @@ export class TripMap {
     private map: Map;
     //todo -вроде не нужна
     private model: TrackModel;
-    private trackModelService: TrackModelService;
-    //последовательнось для пролистывания элементов модели.
+    private _trackModelService: TrackModelService;
+    //последовательнось для пролистывания элементов модели. (там сейчас только интервалы)
     private sequence: ArraySequence<Binding>;
-    private selectedObject: Interval|Marker = null;
+    private selectedObject: Interval = null;
+    private _selectedPhoto: Photo = null;//фото выделяется независимо от интервалов.
 
     //Подсветка объектов на карте
     private selectedLines: Polyline[] = [];
-    private selectedMarker: Marker;
+    private selectedPhotoMarker: Marker = null;
 
 
     //Срабатывают при выделение/снятии выделения элемента карты.
     private selectionListeners: Array<() => void> = [];
 
-    public constructor(map: Map) {
+    public constructor(map: Map, trackModelService: TrackModelService) {
         this.map = map;
+        this.setModel(trackModelService)
     }
 
-    public setModel(trackModelService: TrackModelService) {
-        this.trackModelService =  trackModelService;
+    private setModel(trackModelService: TrackModelService) {
+        this._trackModelService =  trackModelService;
         this.model = trackModelService.model;
         const model = this.model;
         const map = this.map;
+
+        this.map.addEventListener('click', (event: LeafletEvent) => {
+                    this.deselectPhoto();
+        });
 
         //наносим трек
         model.segments.forEach((track: TrackSegment, index: number) => {
@@ -71,10 +77,29 @@ export class TripMap {
              + 'Фото ' + photo.number + '. ' + photo.name;
 
             marker.addTo(map).on('click', (event: LeafletEvent) => {
-                    this.select(photo);
+                    if(this.selectedPhotoMarker){
+                        this.selectedPhotoMarker.remove();
+                    }
+                    this._selectedPhoto = photo;
+                    const markerIcon = L.icon({
+                        iconUrl: Util.getUrl('ico/camera-selected.svg'),
+                        iconSize: [30, 30]
+                    });
+
+                    const marker: Marker = L.marker([photo.lat, photo.lon], {
+                        icon: markerIcon,
+                        opacity: 50,
+                        zIndexOffset: 100
+                    });
+                    this.selectedPhotoMarker = marker;
+                    marker.addTo(this.map).on('click', (event: LeafletEvent) => {
+                            this.deselectPhoto();
+                        }
+                    );
                     this.fireSelected();
                 }
             );
+
 
         });
 
@@ -87,14 +112,18 @@ export class TripMap {
 
         model.marks.forEach(mark =>{
             const marker: Marker = L.marker([mark.lat,  mark.lng], {icon: markerIcon, opacity:50, title: mark.name});
+            var popup = `<b>${mark.name}</b><br/> ${mark.description?mark.description: ''}`
             marker.addTo(map).on('click', (event: LeafletEvent) => {
-                this.select(mark);
-                this.fireSelected();
-            }
+                    this.deselectPhoto();
+                }
             );
+            marker.bindPopup(popup,  {
+                // @ts-ignore
+                //   maxWidth: "auto"
+            } );
         });
 
-        this.sequence = new ArraySequence<Binding>(this.trackModelService.getSequenceArray());
+        this.sequence = new ArraySequence<Binding>(this._trackModelService.getSequenceArray());
 
         //В помощь разработчику, чтобы он всегда мог найти координтаты места на карте
         map.on('click', event => {
@@ -107,8 +136,18 @@ export class TripMap {
 
     }
 
+    private deselectPhoto() {
+        if(this.selectedPhoto) {
+            this._selectedPhoto = null;
+            this.selectedPhotoMarker.remove();
+            this.selectedPhotoMarker = null;
+            this.fireSelected();
+        }
+    }
+
     private addTrackOnClickListener(trackLine: Polyline, track: TrackSegment) {
         trackLine.on('click', (event: LeafletEvent) => {
+            this.deselectPhoto();
             // @ts-ignore
             let lat = event.latlng.lat;
             // @ts-ignore
@@ -203,11 +242,6 @@ export class TripMap {
         }
         this.selectedLines =[];
 
-        if(this.selectedMarker) {
-            this.selectedMarker.remove();
-            this.selectedMarker = null;
-        }
-
         if (this.selectedObject) {
             let obj = this.selectedObject;
 
@@ -234,45 +268,31 @@ export class TripMap {
                     this.addTrackOnClickListener(trackLine, segment);
                 }
 
-            } else if (obj instanceof Mark) {//не используется
-                const markerIcon = L.icon({
-                    iconUrl: Util.getUrl('ico/location-highlite.svg'),
-                    iconSize: [20, 20],
-                });
-
-                const marker: Marker = L.marker([obj.lat, obj.lng], {
-                    icon: markerIcon,
-                    opacity: 50,
-                    title: obj.name,
-                    riseOnHover: true,
-                    zIndexOffset:100
-
-                });
-                marker.addTo(this.map).on('click', (event: LeafletEvent) => {
-                        this.clearSelection();
-                    }
-                );
-                this.selectedMarker = marker;
             }
-            else if (obj instanceof Photo) {
-                const markerIcon = L.icon({
-                    iconUrl: Util.getUrl('ico/camera-selected.svg'),
-                    iconSize: [40, 40]
-                });
-
-                const marker: Marker = L.marker([obj.lat, obj.lon], {
-                    icon: markerIcon,
-                    opacity: 50,
-                    zIndexOffset:100
-                });
-                marker.addTo(this.map).on('click', (event: LeafletEvent) => {
-                        this.clearSelection();
-                    }
-                );
-                this.selectedMarker = marker;
-            }
+            // else if (obj instanceof Mark) {//не используется
+            //     const markerIcon = L.icon({
+            //         iconUrl: Util.getUrl('ico/location-highlite.svg'),
+            //         iconSize: [20, 20],
+            //     });
+            //
+            //     const marker: Marker = L.marker([obj.lat, obj.lng], {
+            //         icon: markerIcon,
+            //         opacity: 50,
+            //         title: obj.name,
+            //         riseOnHover: true,
+            //         zIndexOffset:100
+            //
+            //     });
+            //     marker.addTo(this.map).on('click', (event: LeafletEvent) => {
+            //             this.clearSelection();
+            //         }
+            //     );
+            //     this.selectedMarker = marker;
+            // }
         }
     }
+
+
 
     public getSelected(): any {
         return this.selectedObject;
@@ -326,5 +346,14 @@ export class TripMap {
 
     getMap() {
         return this.map;
+    }
+
+    get selectedPhoto(): Photo {
+        return this._selectedPhoto;
+    }
+
+
+    get trackModelService(): TrackModelService {
+        return this._trackModelService;
     }
 }

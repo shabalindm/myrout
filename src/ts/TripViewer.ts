@@ -61,6 +61,7 @@ export class TripViewer {
     constructor(tripMap: TripMap, parent:Element) {
         this.tripMap = tripMap;
         this.parent = parent;
+        this.trackModelService = tripMap.trackModelService;
         this.btnPrev = this.get("btn-prev");
         this.btnNext = this.get("btn-next");
         this.title = this.get("infoPanel.title");
@@ -94,110 +95,102 @@ export class TripViewer {
             this.render();
         });
 
-
-    }
-
-    public setJsonData(data:any){
-        this.highlightNavigationButtons();
         this.render();
     }
 
-    public setModel(trackModelService: TrackModelService) {
-        this.trackModelService = trackModelService;
-        this.tripMap.setModel(trackModelService);
-        this.highlightNavigationButtons();
-        this.render();
-    }
+
+
+
 
     private render(){
         let obj = this.tripMap.getSelected();
         const model = this.tripMap.getModel();
+        const selectedPhoto = this.tripMap.selectedPhoto;
+        if(selectedPhoto) {
+                this.intervalBlock.style.display = 'none';
+                this.photoBlock.style.display = 'block';
+                this.title.innerHTML = 'Фото ' + TripViewer.stringify(selectedPhoto.number);
+                this.photoText.innerHTML = 'Фото ' + TripViewer.stringify(selectedPhoto.number) +'. ' + TripViewer.stringify(selectedPhoto.name);
+                this.photoImg.setAttribute("src", selectedPhoto.url.toString());
+                const map = this.tripMap.getMap();
 
-        if(!obj){
-            this.intervalBlock.style.display = 'block';
-            this.photoBlock.style.display = 'none';
-            const globalInterval = this.trackModelService.getGlobalInterval();
-            const stat = this.trackModelService.getIntervalStatistic(globalInterval);
-            this.title.innerHTML = TripViewer.stringify(model.name);
-            this.description.innerHTML = TripViewer.stringify(model.description);
-            this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
-            this.setDatesFields(stat.end.date, stat.begin.date, stat.timeInMotion);
-            this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
-        }
+                const bounds = map.getBounds();
+                map.panTo(new LatLng(selectedPhoto.lat - (bounds.getSouth() - bounds.getNorth())/4 , selectedPhoto.lon), {animate:true})
+        } else {
 
-        if (obj instanceof Interval) {
-            this.intervalBlock.style.display = 'block';
-            this.photoBlock.style.display = 'none';
-            const interval = obj;
-            const stat = this.trackModelService.getIntervalStatistic(interval);
-            this.title.innerHTML = TripViewer.stringify(interval.name);
-            this.description.innerHTML = TripViewer.stringify(interval.description);
-            this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
-            this.setDatesFields(stat.end.date, stat.begin.date, stat.timeInMotion);
-            this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
-
-            const map = this.tripMap.getMap();
-            const bounds = map.getBounds();
-            const w = bounds.getEast() - bounds.getWest();
-            const h = bounds.getNorth() - bounds.getSouth();
-            const innerSouth = bounds.getSouth() + h / 10;
-            const innerWest = bounds.getWest()  + w / 10;
-            const innerNorth = bounds.getNorth()  - h / 5;
-            const innerEast = bounds.getEast()  - w / 10;
-
-            if (stat.maxLat - stat.minLat > innerNorth - innerSouth
-                || stat.maxLng - stat.minLng > innerEast - innerWest) {
-                const w1 = stat.maxLng - stat.minLng;
-                const h1 = stat.maxLat - stat.minLat;
-                map.fitBounds(new LatLngBounds(
-                    new LatLng(stat.minLat - h1 / 10, stat.minLng - w1 / 10),
-                    new LatLng(stat.maxLat +  h1 / 3, stat.maxLng +  w1 / 10)
-                ), {
-                    animate: true,
-                });
-            } else {
-                // let centerLat = bounds.getCenter().lat;
-                // let centerLng = bounds.getCenter().lng;
-                // if (stat.maxLat > innerNorth){
-                //     centerLat += (stat.maxLat - innerNorth)
-                // }
-                // if ( stat.minLat < innerSouth){
-                //     centerLat -= (innerSouth-stat.minLat )
-                // }
-                // if (stat.maxLng > innerEast){
-                //     centerLat += (stat.maxLng - innerEast)
-                // }
-                // if ( stat.minLng < innerWest){
-                //     centerLat -= (innerWest - stat.minLng)
-                // }
-                if(stat.maxLat > innerNorth || stat.minLat < innerSouth || stat.maxLng > innerEast || stat.minLng < innerWest) {
-                    map.panTo(new LatLng((stat.maxLat + stat.minLat) / 2, (stat.maxLng + stat.minLng) / 2));
-                }
-
-
+            if (!obj) {
+                this.intervalBlock.style.display = 'block';
+                this.photoBlock.style.display = 'none';
+                const globalInterval = this.trackModelService.getGlobalInterval();
+                const stat = this.trackModelService.getIntervalStatistic(globalInterval);
+                this.title.innerHTML = TripViewer.stringify(model.name);
+                this.description.innerHTML = TripViewer.stringify(model.description);
+                this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
+                this.setDatesFields(stat.end.date, stat.begin.date, stat.timeInMotion);
+                this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
             }
 
-        }
-        if (obj instanceof Mark) {//не используется
-            this.intervalBlock.style.display = 'block';
-            this.photoBlock.style.display = 'none';
-            this.title.innerHTML = TripViewer.stringify(obj.name);
-            this.description.innerHTML = TripViewer.stringify(obj.description);
-            this.distance.innerHTML = '';
-            this.time.innerHTML = '';
-            this.dates.innerHTML = '';
-            this.deltaH.innerHTML = '';
-        }
-        if(obj instanceof Photo){
-            this.intervalBlock.style.display = 'none';
-            this.photoBlock.style.display = 'block';
-            this.title.innerHTML = 'Фото ' + TripViewer.stringify(obj.number);
-            this.photoText.innerHTML = 'Фото ' + TripViewer.stringify(obj.number) +'. ' + TripViewer.stringify(obj.name);
-            this.photoImg.setAttribute("src", obj.url.toString());
-            const map = this.tripMap.getMap();
+            if (obj instanceof Interval) {
+                this.intervalBlock.style.display = 'block';
+                this.photoBlock.style.display = 'none';
+                const interval = obj;
+                const stat = this.trackModelService.getIntervalStatistic(interval);
+                this.title.innerHTML = TripViewer.stringify(interval.name);
+                this.description.innerHTML = TripViewer.stringify(interval.description);
+                this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
+                this.setDatesFields(stat.end.date, stat.begin.date, stat.timeInMotion);
+                this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
 
-            const bounds = map.getBounds();
-            map.panTo(new LatLng(obj.lat - (bounds.getSouth() - bounds.getNorth())/4 , obj.lon), {animate:true})
+                const map = this.tripMap.getMap();
+                const bounds = map.getBounds();
+                const w = bounds.getEast() - bounds.getWest();
+                const h = bounds.getNorth() - bounds.getSouth();
+                const innerSouth = bounds.getSouth() + h / 10;
+                const innerWest = bounds.getWest() + w / 10;
+                const innerNorth = bounds.getNorth() - h / 5;
+                const innerEast = bounds.getEast() - w / 10;
+
+                if (stat.maxLat - stat.minLat > innerNorth - innerSouth
+                    || stat.maxLng - stat.minLng > innerEast - innerWest) {
+                    const w1 = stat.maxLng - stat.minLng;
+                    const h1 = stat.maxLat - stat.minLat;
+                    map.fitBounds(new LatLngBounds(
+                        new LatLng(stat.minLat - h1 / 10, stat.minLng - w1 / 10),
+                        new LatLng(stat.maxLat + h1 / 3, stat.maxLng + w1 / 10)
+                    ), {
+                        animate: true,
+                    });
+                } else {
+                    // let centerLat = bounds.getCenter().lat;
+                    // let centerLng = bounds.getCenter().lng;
+                    // if (stat.maxLat > innerNorth){
+                    //     centerLat += (stat.maxLat - innerNorth)
+                    // }
+                    // if ( stat.minLat < innerSouth){
+                    //     centerLat -= (innerSouth-stat.minLat )
+                    // }
+                    // if (stat.maxLng > innerEast){
+                    //     centerLat += (stat.maxLng - innerEast)
+                    // }
+                    // if ( stat.minLng < innerWest){
+                    //     centerLat -= (innerWest - stat.minLng)
+                    // }
+                    if (stat.maxLat > innerNorth || stat.minLat < innerSouth || stat.maxLng > innerEast || stat.minLng < innerWest) {
+                        map.panTo(new LatLng((stat.maxLat + stat.minLat) / 2, (stat.maxLng + stat.minLng) / 2));
+                    }
+                }
+
+            }
+            if (obj instanceof Mark) {//не используется
+                this.intervalBlock.style.display = 'block';
+                this.photoBlock.style.display = 'none';
+                this.title.innerHTML = TripViewer.stringify(obj.name);
+                this.description.innerHTML = TripViewer.stringify(obj.description);
+                this.distance.innerHTML = '';
+                this.time.innerHTML = '';
+                this.dates.innerHTML = '';
+                this.deltaH.innerHTML = '';
+            }
         }
 
     }

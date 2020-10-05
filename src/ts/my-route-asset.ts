@@ -44,8 +44,7 @@ for (const widget of widgets) {
     }).addTo(map);
     //todo - это не должно быть здесь
     map.zoomControl.setPosition("bottomright");
-    let tMap = new TripMap(map);
-    let tripViewer = new TripViewer(tMap, widget);
+
 
     const trackModel: TrackModel = new TrackModel();
     let parser = new xml2js.Parser();
@@ -112,8 +111,8 @@ for (const widget of widgets) {
         trackModel.photos.set(photo.url, photo);
     }
 
-
-    tripViewer.setModel(new TrackModelService(trackModel));
+    let tMap = new TripMap(map, new TrackModelService(trackModel));
+    let tripViewer = new TripViewer(tMap, widget);
 
 }
 
