@@ -22,14 +22,13 @@ module.exports = env => {
             writeToDisk: true,
             openPage: '/demo/demo.html'
         },
-
         plugins: [
             new webpack.HotModuleReplacementPlugin(),
             new MiniCssExtractPlugin({}),
-            new CopyWebpackPlugin([
-                {from: 'src/resources', to: 'myrout'},
+            new CopyWebpackPlugin({patterns: [
+                {from: 'src/resources', to: 'myrout',},
                 {from: 'src/demo', to: 'demo'},
-            ]),
+            ]}),
         ],
         resolve: {
             extensions: ['.ts', '.js', '.json']
