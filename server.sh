@@ -1,0 +1,1 @@
+python -m server 8000 dist
