@@ -36,6 +36,98 @@
 }
 .myrout__infoPanel {
     width: 100%;
+}
 
+
+/* -----------------*/
+#ctxMenu{
+    display:none;
+    z-index:100;
+}
+.ctx-menu {
+    position:absolute;
+    display:block;
+    width: 120px;
+    /*height: 100px;*/
+    left:0px;
+    top:0px;
+    padding:0;
+    margin:0;
+    border:1px solid;
+    background-color:white;
+    font-weight:normal;
+    white-space:nowrap;
+}
+menu {
+    position:relative;
+    display:block;
+    left:0px;
+    top:0px;
+    padding:4px;
+    margin:0;
+    border:1px solid;
+    background-color:white;
+    font-weight:normal;
+    white-space:nowrap;
+}
+menu:hover{
+    background-color:#eef;
+    font-weight:bold;
+}
+menu:hover > menu{
+    display:block;
+}
+menu > menu{
+    display:none;
+    position:relative;
+    top:-20px;
+    left:100%;
+    width:55px;
+}
+menu[title]:before{
+    content:attr(title);
+}
+menu:not([title]):before{
+    content:"\2630";
 
 }
+
+    /*---------------------------------toolbar ---------------------------------*/
+
+[role="toolbar"] {
+    padding: 5px;
+    height: 44px;
+    width: 1050px;
+    background-color: #ececea;
+}
+
+[role="toolbar"] button,
+[role="toolbar"] label,
+[role="toolbar"] .spinbutton,
+[role="toolbar"] a,
+[role="toolbar"] .input {
+    border: 1px solid rgb(255, 255, 255);
+    outline: none;
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 5px;
+    text-align: center;
+    background: rgb(255, 255, 255);
+    color: #222428;
+    font-size: 14px;
+    line-height: 1.5em;
+    margin-right: 0.25em;
+}
+
+[role="toolbar"] button[aria-pressed="true"],
+
+[role="toolbar"] button[aria-disabled="true"] {
+    color: #889;
+    cursor: not-allowed;
+}
+
+[role="toolbar"] button[aria-disabled="true"]:focus {
+    border-color: #005a9c;
+}
+
+

@@ -20,7 +20,7 @@ module.exports = env => {
             compress: false,
             port: 9002,
             writeToDisk: true,
-            openPage: '/demo/demo.html'
+            openPage: '/demo/index.html'
         },
         plugins: [
             new webpack.HotModuleReplacementPlugin(),

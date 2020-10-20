@@ -26,7 +26,7 @@ export class TrackModel{
      * Фотографии. Каждая фотография обязана быть привязана к точке трека, но может быть смещена относительно нее.
      * Дата и время точки трека, к которой привязана фотография, может не совпадать с датой и временем фотографии.
      */
-    private _photos: Map<String, Photo> = new Map<String, Photo>();
+    private _photos: Array<Photo> = [];
 
     /**
      * Участки пути на треке. Участки могут накладываться друг на друга, пресекаться и т.д.
@@ -67,11 +67,11 @@ export class TrackModel{
     }
 
 
-    get photos(): Map<String, Photo> {
+    get photos(): Array<Photo> {
         return this._photos;
     }
 
-    set photos(value: Map<String, Photo>) {
+    set photos(value: Array<Photo>) {
         this._photos = value;
     }
 

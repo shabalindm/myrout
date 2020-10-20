@@ -3,19 +3,16 @@ import {LatLng} from "leaflet";
 /**
  * Текстовая метка. Привязана по дате к точке трека.
  */
-export class Mark {
+export class Mark extends LatLng{
     private _name: string;
     private _description?: string;
-    private _lat: number;
-    private _lng: number;
     private _iconUrl: string;
 
 
     constructor(name: string, description: string, lat: number, lng: number, iconUrl: string) {
+        super(lat, lng);
         this._name = name;
         this._description = description;
-        this._lat = lat;
-        this._lng = lng;
         this._iconUrl = iconUrl;
     }
 
@@ -35,21 +32,6 @@ export class Mark {
         this._description = value;
     }
 
-    get lat(): number {
-        return this._lat;
-    }
-
-    set lat(value: number) {
-        this._lat = value;
-    }
-
-    get lng(): number {
-        return this._lng;
-    }
-
-    set lng(value: number) {
-        this._lng = value;
-    }
 
     get iconUrl(): string {
         return this._iconUrl;

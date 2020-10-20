@@ -11,6 +11,11 @@ import {Photo} from "./model/Photo";
 import {Mark} from "./model/Mark";
 import {Util} from "./Util";
 import {TrackModelService} from "./TrackModelService";
+import {Settings} from "./Settings";
+import {parseBooleans} from "xml2js/lib/processors";
+import {LatLng, LatLngBounds} from "leaflet";
+import {ContextMenu} from "./ContextMenu";
+import {Toolbar} from "./Toolbar";
 
 
 const widgets = document.getElementsByClassName("trip-interactive-map");
@@ -19,12 +24,20 @@ for (const widget of widgets) {
     const trackUrl = widget.getAttribute('track-url');
     const trackDescriptionsUrl = widget.getAttribute('track-descriptions-url');
     const photoDescriptionsUrl = widget.getAttribute('photo-descriptions-url');
-    const from = new Date(widget.getAttribute('from'));
-    const to = new Date(widget.getAttribute('to'));
+
+    const fromAttr = widget.getAttribute('from');
+    const from = fromAttr ? new Date(fromAttr): null;
+    const toAttr = widget.getAttribute('to');
+    const to = toAttr ? new Date(toAttr) : null;
     const objectsUrl = widget.getAttribute('objects-url');
-    const startCoords = widget.getAttribute('center').split(",").map(s => parseFloat(s));
+    const center = widget.getAttribute('center');
     const zoomString = widget.getAttribute('zoom');
     const startZoom = parseInt(zoomString);
+    const startIntervalName =  widget.getAttribute('start-interval');
+    const editMode = widget.getAttribute('edit-mode');
+    if(editMode) {
+        Settings.editMode = parseBooleans(editMode);
+    }
 
 
     var xhr = new XMLHttpRequest();//todo - переделать на асинхронный запрос
@@ -34,17 +47,18 @@ for (const widget of widgets) {
     if (xhr.status != 200) {
         throw new Error('cannot get ' + widgetHtmlUrl + '. ' + xhr.status + ': ' + xhr.statusText);
     }
-    widget.innerHTML = xhr.responseText;
-    const mapElement: HTMLElement = (<HTMLElement[]><any>widget.getElementsByClassName('myrout__map'))[0];
-    const map = L.map(mapElement).setView([startCoords[0], startCoords[1]], startZoom);
-
-    L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-    }).addTo(map);
-    //todo - это не должно быть здесь
-    map.zoomControl.setPosition("bottomright");
-
+    if(Settings.editMode){
+        const html = xhr.responseText
+        const widgetHtmlUrl = Util.getUrl('toolbar.html');
+        xhr.open('GET', widgetHtmlUrl, false);
+        xhr.send();
+        if (xhr.status != 200) {
+            throw new Error('cannot get ' + widgetHtmlUrl + '. ' + xhr.status + ': ' + xhr.statusText);
+        }
+        widget.innerHTML = xhr.responseText + html;
+    } else {
+        widget.innerHTML = xhr.responseText;
+    }
 
     const trackModel: TrackModel = new TrackModel();
     let parser = new xml2js.Parser();
@@ -108,11 +122,57 @@ for (const widget of widgets) {
 
     for (const desc of photoDescriptions) {
         const photo = new Photo("photos/" + desc.file, desc.number, desc.name, desc.accuracy, desc.lat, desc.lng);//todo - hardcode photos/
-        trackModel.photos.set(photo.url, photo);
+        trackModel.photos.push( photo);
     }
 
-    let tMap = new TripMap(map, new TrackModelService(trackModel));
+    const trackModelService = new TrackModelService(trackModel);
+
+    let startInterval;
+    let startIntervalBounds;
+    if(startIntervalName) {
+        startInterval = trackModel.intervals.find(i => i.name == startIntervalName);
+        if(startInterval){
+            const stat = trackModelService.getIntervalStatistic(startInterval);
+            startIntervalBounds = new LatLngBounds(
+                new LatLng(stat.minLat, stat.minLng),
+                new LatLng(stat.maxLat, stat.maxLng)
+            );
+        }
+        else {
+            throw new Error("Интервал не найден " +startIntervalName);
+        }
+    }
+
+    const mapElement: HTMLElement = (<HTMLElement[]><any>widget.getElementsByClassName('myrout__map'))[0];
+    const map = L.map(mapElement);
+
+    if (!startIntervalName) {
+        const startCoords = center.split(",").map(s => parseFloat(s));
+        map.setView([startCoords[0], startCoords[1]], startZoom);
+    } else {
+        map.fitBounds(startIntervalBounds, {animate:false})
+    }
+
+    L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    }).addTo(map);
+    //todo - это не должно быть здесь
+    map.zoomControl.setPosition("bottomright");
+
+    const contextMenu = new ContextMenu(map);
+    let tMap = new TripMap(map, trackModelService, contextMenu);
+    if(startInterval){
+        tMap.selectInterval(startInterval);
+    }
     let tripViewer = new TripViewer(tMap, widget);
+    if(Settings.editMode){
+        new Toolbar(tMap, widget)
+    }
+
+
+
+
 
 }
 

@@ -1,7 +1,8 @@
 import {Mark} from "./Mark";
+import {LatLng} from "leaflet";
 
 
-export class Photo  {
+export class Photo extends LatLng{
     private _url: String;
     /**
      * Номер фотографии (в соответсвии с нумерацией фотографий в документе)
@@ -9,17 +10,14 @@ export class Photo  {
     private _number: String;
     private _name:String
     private _accuracy: number;
-    private _lat: number;
-    private _lon: number;
 
 
-    constructor(url: String, number: String, name: String, accuracy: number, lat: number, lon: number) {
+    constructor(url: String, number: String, name: String, accuracy: number, lat: number, lng: number) {
+        super(lat, lng);
         this._url = url;
         this._number = number;
         this._name = name;
         this._accuracy = accuracy;
-        this._lat = lat;
-        this._lon = lon;
     }
 
     get url(): String {
@@ -55,19 +53,4 @@ export class Photo  {
     }
 
 
-    get lat(): number {
-        return this._lat;
-    }
-
-    set lat(value: number) {
-        this._lat = value;
-    }
-
-    get lon(): number {
-        return this._lon;
-    }
-
-    set lon(value: number) {
-        this._lon = value;
-    }
 }

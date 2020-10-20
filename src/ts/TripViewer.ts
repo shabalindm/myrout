@@ -79,22 +79,18 @@ export class TripViewer {
         this.btnNext.addEventListener('click', () => {
             if (this.tripMap.hasNext()) {
                 tripMap.next();
-                this.highlightNavigationButtons();
                 this.render();
             }
         });
         this.btnPrev.addEventListener('click', () => {
             if (this.tripMap.hasPrev()) {
                 tripMap.prev();
-                this.highlightNavigationButtons();
                 this.render();
             }
         });
         tripMap.addSelectionListener(() =>{
-            this.highlightNavigationButtons();
             this.render();
         });
-
         this.render();
     }
 
@@ -103,8 +99,9 @@ export class TripViewer {
 
 
     private render(){
+        this.highlightNavigationButtons();
         let obj = this.tripMap.getSelected();
-        const model = this.tripMap.getModel();
+        const model = this.trackModelService.model;
         const selectedPhoto = this.tripMap.selectedPhoto;
         if(selectedPhoto) {
                 this.intervalBlock.style.display = 'none';
@@ -115,7 +112,7 @@ export class TripViewer {
                 const map = this.tripMap.getMap();
 
                 const bounds = map.getBounds();
-                map.panTo(new LatLng(selectedPhoto.lat - (bounds.getSouth() - bounds.getNorth())/4 , selectedPhoto.lon), {animate:true})
+                map.panTo(new LatLng(selectedPhoto.lat - (bounds.getSouth() - bounds.getNorth())/4 , selectedPhoto.lng), {animate:true})
         } else {
 
             if (!obj) {
@@ -297,4 +294,8 @@ export class TripViewer {
         }
     }
 
+    public selectInterval(startInterval: Interval) {
+        this.tripMap.selectInterval(startInterval);
+        this.render();
+    }
 }
