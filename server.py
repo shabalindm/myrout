@@ -32,8 +32,8 @@ class HTTPRequestHandler(server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         """Save a file following a HTTP PUT request"""
-        filename = os.path.basename(self.path)
-
+        filename = self.path.strip("/")
+        print(filename)
         file_length = int(self.headers['Content-Length'])
         with open(filename, 'wb') as output_file:
             output_file.write(self.rfile.read(file_length))

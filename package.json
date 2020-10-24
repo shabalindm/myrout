@@ -54,6 +54,8 @@
     "@types/leaflet": "1.5.17",
     "@types/xml2js": "^0.4.5",
     "leaflet": "^1.7.1",
-    "xml2js": "0.4.23"
+    "xml2js": "0.4.23",
+    "moment": "^2.29.1",
+    "@types/moment": "^2.13.0"
   }
 }

@@ -11,16 +11,19 @@ import {LatLng} from "leaflet";
 import {Settings} from "./Settings";
 import {Mark} from "./model/Mark";
 import {Photo} from "./model/Photo";
+import {Pause} from "./model/Pause";
 
 
 export class TrackModelService {
     private readonly _model: TrackModel;
     private intervalsStatistics: Map<Interval, IntervalStatistic> = new Map<Interval, IntervalStatistic>();
-    private pauses: Map<TrackSegment, Array<[number, number]>>  = new Map<TrackSegment, Array<[number, number]>>();
     private globalInterval: Interval;
 
     constructor(model: TrackModel) {
         this._model = model;
+        if(Settings.editMode) {
+            this.model.checkAndNormalize();
+        }
     }
 
     get model(): TrackModel {
@@ -56,18 +59,11 @@ export class TrackModelService {
         return intervalStatistic;
     }
 
-    public getPauses(segment:TrackSegment){
-        let pauses = this.pauses.get(segment);
-        if(!pauses){
-            pauses = TrackModelService.findPauses(segment);
-            this.pauses.set(segment, pauses);
-        }
-        return pauses;
-    }
 
-    static findPauses(segment: TrackSegment) : Array<[number, number]>{
+
+    static findPauses(segment: TrackSegment) : Array<Pause>{
         const points = segment.points;
-        let res : Array<[number, number]> = [];
+        let res : Array<Pause> = [];
 
         let cur1 = 0;
         let cur2 = 1;
@@ -110,7 +106,7 @@ export class TrackModelService {
                         p2 = points[cur2];
                         let deltaT = p2.date.getTime() - p1.date.getTime();
                         if (deltaT > 180000) {//То, что нашили в результате  уточнения действительно оказалась паузой.
-                            res.push([cur1, cur2])
+                            res.push(new Pause(p1.date, p2.date))
                             cur1 = cur2;
                             cur2++;
                             pauseBegin = false;
@@ -147,9 +143,11 @@ export class TrackModelService {
         var begin: TrackPoint = null;
         var end: TrackPoint = null;
         var pauses: Array<[TrackPoint, TrackPoint]> = [];
+        var beginPointer: {segmentIndex:number, pointIndex: number} = null;
+        var endPointer: {segmentIndex:number, pointIndex: number} = null;
         
-        for (const trackSegment of track) {
-            const points = trackSegment.points;
+        for (let k = 0; k < track.length; k ++) {
+            const points = track[k].points;
             if(points.length == 0){
                 continue;
             }
@@ -180,27 +178,30 @@ export class TrackModelService {
             const first = points[fromIndex];
             if (begin == null || begin.date > first.date) {
                 begin = first;
+                beginPointer = {segmentIndex: k, pointIndex: fromIndex};
             }
             const last = points[toIndex - 1];
             if (end == null || end.date < last.date) {
                 end = last;
+                endPointer = {segmentIndex: k, pointIndex: toIndex -1};
             }
 
             let deltaT = last.date.getTime() - first.date.getTime();
-            this.getPauses(trackSegment).forEach(([a, b]) => {
-                const pauseBegin = points[a].date.getTime();
-                const pauseEnd = points[b].date.getTime();
-                const endInside = pauseEnd >= first.date.getTime() && pauseEnd <= last.date.getTime();
-                const beginInside = pauseBegin >= first.date.getTime() && pauseBegin <= last.date.getTime();
+            this.model.pauses.forEach((p) => {//todo - можно довести до идеала, делать  binary search.
+                const pauseBegin = p.from;
+                const pauseEnd = p.to;
+                const endInside = pauseEnd >= first.date && pauseEnd <= last.date;
+                const beginInside = pauseBegin >= first.date && pauseBegin <= last.date;
 
                 if(beginInside && endInside){
-                    deltaT -= pauseEnd - pauseBegin;
+                    deltaT -= pauseEnd.getTime() - pauseBegin.getTime();
                 } else if (!beginInside && endInside) {
-                    deltaT -= pauseEnd - begin.date.getTime();
+                    deltaT -= pauseEnd.getTime() - begin.date.getTime();
                 } else if (beginInside && !endInside) {
-                    deltaT -= last.date.getTime() - pauseEnd;
+                    deltaT -= last.date.getTime() - pauseBegin.getTime();
                 }
             })
+            timeInMotion+=deltaT;
             
             let deltaH = 0;
             for (let i = fromIndex; i < toIndex - 1; i++) {
@@ -232,9 +233,58 @@ export class TrackModelService {
                     p1 = p2;
                 }
             }
-
         }
-        const intervalStatistic = new IntervalStatistic(
+        let readBeginDate = begin.date;
+        let realEndDate = end.date;
+        //корректировка начала и конца
+        if(beginPointer) {
+            const k = beginPointer.segmentIndex;
+            const i = beginPointer.pointIndex;
+            let prevPointDate: Date;
+            if(i>0){
+                prevPointDate = track[k].points[i-1].date;
+            }else if(k>0){
+                const segment = track[k-1].points;
+                prevPointDate = segment[segment.length -1].date;
+            }
+            if(!prevPointDate){
+                prevPointDate = new Date(0)
+            }
+             for(const p of this.model.pauses) {
+                if(prevPointDate < p.to && begin.date > p.to){
+                   readBeginDate = p.to;
+                   timeInMotion += (begin.date.getTime() - p.to.getTime());
+                   break;
+                }
+            }
+        }
+
+        if(endPointer) {
+            const k = endPointer.segmentIndex;
+            const i = endPointer.pointIndex;
+            let nextPointDate: Date;
+            const segmentK = track[k].points;
+            if (i < segmentK.length-1) {
+                nextPointDate = segmentK[i + 1].date;
+            } else if (k < track.length - 1) {
+                nextPointDate = track[k + 1].points[0].date;
+            }
+            if(!nextPointDate){
+                nextPointDate = new Date(8640000000000000);//max js date
+            }
+            for(const p of this.model.pauses) {
+                if(end.date < p.from && nextPointDate > p.from){
+                    realEndDate = p.from;
+                    timeInMotion += (p.from.getTime() - end.date.getTime());
+                    break;
+
+                }
+            }
+        }
+
+
+
+        return new IntervalStatistic(
             distance,
             altitudeGain,
             altitudeLoss,
@@ -245,8 +295,9 @@ export class TrackModelService {
             maxLng,
             minLat,
             minLng,
+            readBeginDate,
+            realEndDate
         );
-        return intervalStatistic;
     }
 
     /**
@@ -383,7 +434,6 @@ export class TrackModelService {
 
     clearStatistic() {
         this.intervalsStatistics.clear();
-        this.bindIntervals()
     }
 
     addMark(mark: Mark) {
@@ -396,7 +446,10 @@ export class TrackModelService {
 
     addInterval(interval: Interval) {
         this.model.intervals.push(interval);
+    }
 
-
+    removePause(pause: Pause) {
+        this.model.pauses = this.model.pauses.filter(p => p !== pause);
+        this.clearStatistic();
     }
 }

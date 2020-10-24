@@ -9,6 +9,10 @@ import {Mark} from "./model/Mark";
 import {Photo} from "./model/Photo";
 import {Bounds, LatLng, LatLngBounds} from "leaflet";
 import L = require("leaflet");
+import {IntervalStatistic} from "./IntervalStatistic";
+import moment = require("moment");
+import {Settings} from "./Settings";
+import {Util} from "./Util";
 
 /**
  * Обрамление карты и управляющие элементы.
@@ -122,9 +126,7 @@ export class TripViewer {
                 const stat = this.trackModelService.getIntervalStatistic(globalInterval);
                 this.title.innerHTML = TripViewer.stringify(model.name);
                 this.description.innerHTML = TripViewer.stringify(model.description);
-                this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
-                this.setDatesFields(stat.end.date, stat.begin.date, stat.timeInMotion);
-                this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
+                this.setStat(stat);
             }
 
             if (obj instanceof Interval) {
@@ -134,9 +136,7 @@ export class TripViewer {
                 const stat = this.trackModelService.getIntervalStatistic(interval);
                 this.title.innerHTML = TripViewer.stringify(interval.name);
                 this.description.innerHTML = TripViewer.stringify(interval.description);
-                this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
-                this.setDatesFields(stat.end.date, stat.begin.date, stat.timeInMotion);
-                this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
+                this.setStat(stat);
 
                 const map = this.tripMap.getMap();
                 const bounds = map.getBounds();
@@ -192,6 +192,12 @@ export class TripViewer {
 
     }
 
+    private setStat(stat: IntervalStatistic) {
+        this.distance.innerHTML = TripViewer.getDistanceText(stat.distance);
+        this.setDatesFields(stat.realEnd, stat.realBegin, stat.timeInMotion);
+        this.deltaH.innerHTML = TripViewer.getDeltaHText(stat.altitudeGain, stat.altitudeLoss);
+    }
+
     private static getInnerBounds(map: L.Map) {
         let bounds = map.getBounds();
         const w = bounds.getEast() - bounds.getWest();
@@ -225,11 +231,11 @@ export class TripViewer {
         const deltaTMillis = endDate.getTime() - beginDate.getTime();
         this.time.innerHTML = TripViewer.timeIntervalToString(deltaTMillis) + '(' + TripViewer.timeIntervalToString(timeInMotion)+')';
         if (TripViewer.datesAreOnSameDay(beginDate, endDate)) {
-            this.dates.innerHTML = this.formatTime(beginDate) + " - " + this.formatTime(endDate);
+            this.dates.innerHTML = TripViewer.formatTime(beginDate) + " - " + TripViewer.formatTime(endDate);
         } else {
             this.dates.innerHTML = this.formatDateInterval(beginDate, endDate);
         }
-        this.dates.title = this.formatDateTime(beginDate) + " - " + this.formatDateTime(endDate);
+        this.dates.title = TripViewer.formatDateTime(beginDate) + " - " + TripViewer.formatDateTime(endDate);
     }
 
     private static timeIntervalToString(deltaTMillis: number) {
@@ -240,40 +246,42 @@ export class TripViewer {
        // return  hours + ':' + minutes;
     }
 
-    static datesAreOnSameDay(first:Date, second:Date):boolean {
-        return first.getFullYear() === second.getFullYear() &&
-        first.getMonth() === second.getMonth() &&
-        first.getDate() === second.getDate();
+    static datesAreOnSameDay(first: Date, second: Date): boolean {
+        const m1 = Util.toMoment(first);
+        const m2 = Util.toMoment(second);
+        return m1.year() === m2.year() &&
+            m1.dayOfYear() === m2.dayOfYear();
     }
 
-    private formatDateTime(date: Date) {
-        // порнография
-        return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2)
-            + ' ' + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
+    private static formatDateTime(date: Date) {
+       return  Util.toMoment(date).format('DD.MM.YYYY HH:mm');
     }
 
     private formatDateInterval(first: Date, second: Date) {
-        const m1: number = first.getMonth();
-        const m2 = first.getMonth();
-        if (m1 == m2) {
-            return ('0' + first.getDate()).slice(-2) + ' - ' + ('0' + second.getDate()).slice(-2) + ' ' +
+        const m1 = Util.toMoment(first);
+        const m2 = Util.toMoment(second);
+
+        const month1 = m1.month();
+        const month2 = m2.month();
+        if (month1 == month2) {
+            return m1.format('DD') + ' - ' + m2.format('DD') + ' ' +
                 // @ts-ignore
-                this.mounts[m1];
+                this.mounts[month1];
         }
         else {
-            return ('0' + first.getDate()).slice(-2) + ' ' +
+            return (m1.format('DD')  + ' ' +
                 // @ts-ignore
-                this.mounts[m1]  +
-                ' - ' + ('0' + second.getDate()).slice(-2) + ' ' +
+                this.mounts[month1]  +
+                ' - ' + m2.format('DD')  + ' ' +
                 // @ts-ignore
-                this.mounts[m1];
+                this.mounts[month2]);
         }
 
 
     }
-    private formatTime(beginDate: Date) {
+    private static formatTime(date: Date) {
         // порнография
-        return ('0' + beginDate.getHours()).slice(-2) + ':' + ('0' + beginDate.getMinutes()).slice(-2);
+         return  moment(date).utcOffset(Settings.utcOffset).format('HH:mm');
     }
 
 

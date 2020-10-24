@@ -16,6 +16,7 @@ import {parseBooleans} from "xml2js/lib/processors";
 import {LatLng, LatLngBounds} from "leaflet";
 import {ContextMenu} from "./ContextMenu";
 import {Toolbar} from "./Toolbar";
+import {Pause} from "./model/Pause";
 
 
 const widgets = document.getElementsByClassName("trip-interactive-map");
@@ -25,10 +26,11 @@ for (const widget of widgets) {
     const trackDescriptionsUrl = widget.getAttribute('track-descriptions-url');
     const photoDescriptionsUrl = widget.getAttribute('photo-descriptions-url');
 
+    Settings.utcOffset = parseInt( widget.getAttribute('utcOffset'));
     const fromAttr = widget.getAttribute('from');
-    const from = fromAttr ? new Date(fromAttr): null;
+    const from = fromAttr ? Util.parseDate(fromAttr): null;
     const toAttr = widget.getAttribute('to');
-    const to = toAttr ? new Date(toAttr) : null;
+    const to = toAttr ? Util.parseDate(toAttr) : null;
     const objectsUrl = widget.getAttribute('objects-url');
     const center = widget.getAttribute('center');
     const zoomString = widget.getAttribute('zoom');
@@ -99,13 +101,17 @@ for (const widget of widgets) {
     const trackDescription = JSON.parse(xhr.responseText);
 
     for (const interval of trackDescription.intervals) {
-        const trackInterval = new Interval(new Date(interval.from), new Date(interval.to), interval.name, interval.description);
+        const trackInterval = new Interval(Util.parseDate(interval.from), Util.parseDate(interval.to), interval.name, interval.description);
         trackModel.intervals.push(trackInterval);
     }
 
     for (const m of trackDescription.marks) {
         const mark = new Mark(m.name, m.description, m.lat, m.lng, null);
         trackModel.marks.push(mark);
+    }
+    for (const p of trackDescription.pauses) {
+        const pause = new Pause(Util.parseDate(p[0]), Util.parseDate(p[1]));
+        trackModel.pauses.push(pause);
     }
 
     trackModel.name = trackDescription.name;
@@ -121,7 +127,7 @@ for (const widget of widgets) {
     const photoDescriptions = JSON.parse(xhr.responseText);
 
     for (const desc of photoDescriptions) {
-        const photo = new Photo("photos/" + desc.file, desc.number, desc.name, desc.accuracy, desc.lat, desc.lng);//todo - hardcode photos/
+        const photo = new Photo(desc.file, desc.number, desc.name, desc.accuracy, desc.lat, desc.lng);//todo - hardcode photos/
         trackModel.photos.push( photo);
     }
 
@@ -167,7 +173,7 @@ for (const widget of widgets) {
     }
     let tripViewer = new TripViewer(tMap, widget);
     if(Settings.editMode){
-        new Toolbar(tMap, widget)
+        new Toolbar(tMap, widget, trackDescriptionsUrl, photoDescriptionsUrl)
     }
 
 

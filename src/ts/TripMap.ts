@@ -29,6 +29,8 @@ import {ContextMenu} from "./ContextMenu";
 import {MenuAction} from "./MenuAction";
 import {EditForm} from "./EditForm";
 import {makeResolver} from "ts-loader/dist/resolver";
+import {Pause} from "./model/Pause";
+import {util} from "fabric/fabric-impl";
 
 /**
  * Карта с нанесенными на нее объектами
@@ -43,6 +45,7 @@ export class TripMap {
     private _selectedPhoto: Photo = null;//фото выделяется независимо от интервалов.
     private markerLayer: LayerGroup;
     private photoLayer: LayerGroup;
+    private pauseLayer: LayerGroup;
 
 
     //Подсветка объектов на карте
@@ -57,7 +60,8 @@ export class TripMap {
         this.map = map;
         this._contextMenu = contextMenu;
         this.markerLayer = new LayerGroup().addTo(map);
-        this.photoLayer = new LayerGroup().addTo(map)
+        this.photoLayer = new LayerGroup().addTo(map);
+        this.pauseLayer = new LayerGroup().addTo(map);
         this.setModel(trackModelService)
     }
 
@@ -82,7 +86,7 @@ export class TripMap {
         this.sequence = new ArraySequence<Binding>(this._trackModelService.getSequenceArray());
 
         if (Settings.editMode) {
-            this.applyDevMode(trackModelService, map);
+            this.renderPauses();
         }
 
         L.control.scale().addTo(map);
@@ -204,26 +208,50 @@ export class TripMap {
         });
     }
 
-    private applyDevMode(trackModelService: TrackModelService, map: Map) {
-       trackModelService.model.segments.forEach(segment => {
-           trackModelService.getPauses(segment).forEach(([a, b]) => {
-               const latLngs: Array<LatLngExpression> = [];
-               for(let i = a; i <=b; i++){
-                  latLngs.push(segment.points[i]);
-               }
-               const line = L.polyline(latLngs, {weight: 4, opacity: 0.6, color:'red'});
-               line.addTo(map);
-               //todo - это не надо вычислять сразу
-               var dateFormat = {
-                   hour: 'numeric',
-                   minute: 'numeric',
-                   second: 'numeric',
-               };
-               line.bindPopup("Остановка " + segment.points[a].date.toLocaleTimeString() +  " - " +  segment.points[b].date.toLocaleTimeString());
+    public renderPauses() {
+        this.pauseLayer.clearLayers();
+        const pauses = this.trackModelService.model.pauses;
+        this.trackModelService.model.segments.forEach(segment => {
+            pauses.forEach((p) => {
+                const latLngs: Array<LatLngExpression> = [];
+                const points = segment.points;
 
-           })
+                let toIndex = TrackModelService.binarySearch(points,
+                    (point: TrackPoint): boolean => {
+                        return point.date > p.to;
+                    }
+                );
+                let fromIndex = TrackModelService.binarySearch(points,
+                    (point: TrackPoint): boolean => {
+                        return point.date >= p.from;
+                    }
+                );
+                if (fromIndex < points.length && toIndex > 0) {
+                    for (let i = fromIndex; i <= toIndex; i++) {
+                        latLngs.push(segment.points[i]);
+                    }
+                    if(latLngs.length == 0){
+                        latLngs.push(segment.points[fromIndex]);
+                    }
+                    if(latLngs.length == 1){
+                        latLngs.push(latLngs[0]);
+                    }
+                    const line = L.polyline(latLngs, {weight: 7, opacity: 0.6, color: 'red'});
 
-       })
+                    line.addTo(this.pauseLayer);
+                    //todo - это не надо вычислять сразу
+                    var dateFormat = {
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        second: 'numeric',
+                    };
+                    line.bindPopup("Остановка " + p.from.toLocaleTimeString() + " - " + p.to.toLocaleTimeString());
+                    this.rightMenuOnPause(line, p);
+                }
+
+            })
+
+        })
 
 
     }
@@ -422,6 +450,7 @@ export class TripMap {
                     this.trackModelService.clearStatistic();
                     this.sequence = new ArraySequence<Binding>(this._trackModelService.getSequenceArray());
                     this.select(interval);
+                    this.fireSelected();
                 }))
             })
         })
@@ -451,6 +480,30 @@ export class TripMap {
         );
     }
 
+    private rightMenuOnPause(line: Polyline<any>, pause: Pause) {
+        line.on('contextmenu', (event: LeafletEvent) => {
+                this._contextMenu.showContextMenu(event,
+                       [
+                           new MenuAction("Изменить", () => {
+                            // @ts-ignore
+                            const latlng = event.latlng;
+                            new EditForm(this.map).showPauseObject(latlng, pause, (obj) => {
+                                pause.from = Util.parseDate(obj.from);
+                                pause.to = Util.parseDate(obj.to);
+                                this.trackModelService.clearStatistic();
+                                this.renderPauses();
+                            })
+
+                        }),
+                        new MenuAction("Удалить", () => {
+                            this._trackModelService.removePause(pause);
+                            this.trackModelService.clearStatistic();
+                            this.renderPauses();
+                        })
+                    ])
+            }
+        );
+    }
 
     private rightMenuOnPhotoMarker(marker:Marker, photo:Photo){
         marker.on('contextmenu', (event: LeafletEvent) => {
@@ -476,7 +529,7 @@ export class TripMap {
 
     }
 
-    private rightMenuOnTrackLine(trackLine: Polyline<LineString | MultiLineString, any>, interval: Interval) {
+    private rightMenuOnTrackLine(trackLine: Polyline, interval: Interval) {
         trackLine.addEventListener('contextmenu', (e) => {
             this._contextMenu.showContextMenu(e,
                 [

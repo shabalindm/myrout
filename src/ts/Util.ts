@@ -3,6 +3,8 @@ import {Interval} from "./model/Interval";
 import {ArraySequence} from "./sequence/ArraySequence";
 import {TrackModel} from "./model/TrackModel";
 import {Binding} from "./sequence/Binding";
+import {Settings} from "./Settings";
+import moment = require("moment");
 
 export class Util {
 
@@ -50,6 +52,13 @@ export class Util {
             }
         }
         return this.libUrl + path;
+    }
+    static toMoment(date:Date){
+        return moment(date).utcOffset(Settings.utcOffset)
+    }
+
+    static parseDate( date:string): Date {
+      return  new Date( moment.utc(date).valueOf() - Settings.utcOffset*60000)
     }
 
 }

@@ -6,6 +6,7 @@ import {Mark} from "./Mark";
 import {Photo} from "./Photo";
 import {Interval} from "./Interval";
 import {TrackSegment} from "./TrackSegment";
+import {Pause} from "./Pause";
 
 
 export class TrackModel{
@@ -32,6 +33,12 @@ export class TrackModel{
      * Участки пути на треке. Участки могут накладываться друг на друга, пресекаться и т.д.
      */
     private _intervals: Array<Interval> = [];
+
+    /**
+     * Остановки в пути
+     * @private
+     */
+    private _pauses: Array<Pause> = [];
 
 
     get name(): string {
@@ -81,5 +88,34 @@ export class TrackModel{
 
     set intervals(value: Array<Interval>) {
         this._intervals = value;
+    }
+
+    get pauses(): Array<Pause> {
+        return this._pauses;
+    }
+
+    set pauses(value: Array<Pause>) {
+        this._pauses = value;
+    }
+
+    public checkAndNormalize(){
+        this.segments = this.segments.filter(s => s.points.length > 1).sort(((a, b) => a.points[0].date.getTime() - b.points[0].date.getTime()));
+        this.pauses = this.pauses.sort(((a, b) => a.from.getTime() - b.from.getTime()));
+        if(this.pauses.length > 0) {
+            let pauses = [];
+            let prevPause = this.pauses[0];
+            for (let i = 0; i < pauses.length; i++) {
+                const p = this.pauses[i];
+                if(p.from > prevPause.to){
+                    prevPause = p;
+                    pauses.push(p);
+                } else {
+                    prevPause.to = p.to;
+                }
+            }
+            this.pauses = pauses;
+        }
+
+
     }
 }

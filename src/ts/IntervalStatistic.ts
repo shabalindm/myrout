@@ -12,9 +12,13 @@ export class IntervalStatistic{
    readonly maxLng: number;
    readonly minLat: number;
    readonly minLng: number;
+   readonly realBegin: Date;
+   readonly realEnd: Date;
 
 
-   constructor(distance: number, altitudeGain: number, altitudeLoss: number, timeInMotion: number, begin: TrackPoint, end: TrackPoint, maxLat: number, maxLng: number, minLat: number, minLng: number) {
+   constructor(distance: number, altitudeGain: number, altitudeLoss: number, timeInMotion: number,
+               begin: TrackPoint, end: TrackPoint, maxLat: number,
+               maxLng: number, minLat: number, minLng: number, realBegin: Date, realEnd: Date) {
       this.distance = distance;
       this.altitudeGain = altitudeGain;
       this.altitudeLoss = altitudeLoss;
@@ -25,5 +29,7 @@ export class IntervalStatistic{
       this.maxLng = maxLng;
       this.minLat = minLat;
       this.minLng = minLng;
+      this.realBegin = realBegin;
+      this.realEnd = realEnd;
    }
 }

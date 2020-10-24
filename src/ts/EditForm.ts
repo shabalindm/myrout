@@ -3,6 +3,8 @@ import L = require("leaflet");
 import {Mark} from "./model/Mark";
 import {Interval} from "./model/Interval";
 import {Photo} from "./model/Photo";
+import {Pause} from "./model/Pause";
+import {Util} from "./Util";
 
 export class EditForm {
     private map: Map;
@@ -32,6 +34,15 @@ export class EditForm {
         "            <input type=\"submit\" style=\"margin-left: 220px\" value=\"OK\">\n" +
         "        </form>"
 
+
+    private pauseHtml = "<form name=\"editForm\" style=\"padding: 20px; border: solid 1px; background-color: white; width: 300px\">\n" +
+        "            <label for=\"name\">Начало:</label><br>\n" +
+        "            <input type=\"text\" style=\"width: 100%\" name=\"from\"><br>\n" +
+        "            <label>Конец:</label><br>\n" +
+        "             <input type=\"text\" style=\"width: 100%\" name=\"to\"><br>\n" +
+        "            <br><br>\n" +
+        "            <input type=\"submit\" style=\"margin-left: 220px\" value=\"OK\">\n" +
+        "        </form>"
 
     static lastDir:string = "/";
 
@@ -107,4 +118,33 @@ export class EditForm {
         }
 
     }
+
+    public showPauseObject(latlng: LatLng, obj: Pause, onSave: (obj:any) => void){
+        let format = (d:Date) => Util.toMoment(d).format('YYYY-MM-DD HH:mm:ss');
+        const popup = L.popup()
+            .setLatLng(latlng)
+            .setContent(this.pauseHtml)
+            .openOn(this.map);
+        // @ts-ignore
+        const form: HTMLFormElement = document.forms.editForm;
+
+        // @ts-ignore
+        const fromField:HTMLInputElement = form.from;
+        const toField:HTMLInputElement = form.to;
+        if(obj) {
+            fromField.value = format(obj.from);
+            toField.value = format(obj.to);
+        }
+
+        form.onsubmit=() => {
+            onSave({
+                from: fromField.value,
+                to: toField.value
+            });
+            popup.remove();
+            return false;
+        }
+
+    }
+
 }

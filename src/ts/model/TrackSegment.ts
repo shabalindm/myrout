@@ -2,6 +2,7 @@
  * Сегмент трека
  */
 import {TrackPoint} from "./TrackPoint";
+import {Pause} from "./Pause";
 
 
 export class TrackSegment{
