@@ -18,6 +18,8 @@ export class TrackModelService {
     private readonly _model: TrackModel;
     private intervalsStatistics: Map<Interval, IntervalStatistic> = new Map<Interval, IntervalStatistic>();
     private globalInterval: Interval;
+    private photoIndex: Map<string, Photo>;
+
 
     constructor(model: TrackModel) {
         this._model = model;
@@ -451,5 +453,16 @@ export class TrackModelService {
     removePause(pause: Pause) {
         this.model.pauses = this.model.pauses.filter(p => p !== pause);
         this.clearStatistic();
+    }
+
+    public getPhoto(url: string): Photo {
+        if(!this.photoIndex){
+            const photoIndex = new Map<string, Photo>();
+            this.model.photos.forEach(p => {
+               photoIndex.set(p.url.toString(), p)
+            });
+            this.photoIndex = photoIndex;
+        }
+        return this.photoIndex.get(url)
     }
 }

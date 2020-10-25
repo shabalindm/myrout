@@ -280,7 +280,6 @@ export class TripViewer {
 
     }
     private static formatTime(date: Date) {
-        // порнография
          return  moment(date).utcOffset(Settings.utcOffset).format('HH:mm');
     }
 

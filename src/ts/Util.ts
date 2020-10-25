@@ -61,4 +61,41 @@ export class Util {
       return  new Date( moment.utc(date).valueOf() - Settings.utcOffset*60000)
     }
 
+    static httpGet(url:string) {
+
+        return new Promise(function(resolve, reject) {
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+
+            xhr.onload = function() {
+                if (this.status == 200) {
+                    resolve(this.responseText);
+                } else {
+                    var error = new Error(this.statusText);
+                    // @ts-ignore
+                    error.code = this.status;
+                    reject(error);
+                }
+            };
+
+            xhr.onerror = function() {
+                reject(new Error("Network Error"));
+            };
+
+            xhr.send();
+        });
+
+    }
+
+    static format(template: string, args:any){
+        var formatted = template;
+
+        for (const [key, value] of Object.entries(args)) {
+            // @ts-ignore
+            formatted = formatted.replace("${" + key + "}", value);
+        }
+        return formatted;
+    }
+
 }

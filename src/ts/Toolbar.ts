@@ -76,7 +76,7 @@ export class Toolbar {
     }
 
     private saveData(model: TrackModel) {
-        let format = (d:Date) => Util.toMoment(d).format('YYYY-MM-DD HH:MM:SS');
+        let format = (d:Date) => Util.toMoment(d).format('YYYY-MM-DD HH:mm:ss');
         const intervals: Array<any> = [];
         model.intervals.forEach(interval => {
             intervals.push({
