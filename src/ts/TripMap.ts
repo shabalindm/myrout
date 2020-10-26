@@ -21,7 +21,6 @@ import {TrackModel} from "./model/TrackModel";
 import {TrackSegment} from "./model/TrackSegment";
 import {LineString, MultiLineString} from "geojson";
 import {TrackModelService} from "./TrackModelService";
-import {Binding} from "./sequence/Binding";
 import {Mark} from "./model/Mark";
 import {Photo} from "./model/Photo";
 import {Settings} from "./Settings";
@@ -39,9 +38,9 @@ export class TripMap {
     private map: Map;
     private _trackModelService: TrackModelService;
     //последовательнось для пролистывания элементов модели. (там сейчас только интервалы)
-    private sequence: ArraySequence<Binding>;
+    private sequence: ArraySequence<Interval>;
     private _contextMenu: ContextMenu;
-    private selectedObject: Interval = null;
+    private selectedInterval: Interval = null;
     private _selectedPhoto: Photo = null;//фото выделяется независимо от интервалов.
     private markerLayer: LayerGroup;
     private photoLayer: LayerGroup;
@@ -83,7 +82,7 @@ export class TripMap {
         });
         this.drawMarkers();
 
-        this.sequence = new ArraySequence<Binding>(this._trackModelService.getSequenceArray());
+        this.sequence = new ArraySequence<Interval>(this._trackModelService.getSequenceArray());
 
         if (Settings.editMode) {
             this.renderPauses();
@@ -252,16 +251,16 @@ export class TripMap {
             })
 
         })
-
-
     }
 
-    private deselectPhoto() {
+    private deselectPhoto(fire = true) {
         if(this.selectedPhoto) {
             this._selectedPhoto = null;
             this.selectedPhotoMarker.remove();
             this.selectedPhotoMarker = null;
-            this.fireSelected();
+            if(fire) {
+                this.fireSelected();
+            }
         }
     }
 
@@ -275,14 +274,14 @@ export class TripMap {
             let clickedPoint: TrackPoint = TripMap.findNearestPointIndex(new LatLng(lat, lng), track);
             if (!TripMap.findMinCoveringInterval(this.sequence, clickedPoint.date)) {
                 this.sequence.begin();
-                this.selectedObject = null;
+                this.selectedInterval = null;
             } else {
-                const object = this.sequence.current().object;
-                if (object === this.selectedObject) { //Если тыкнули на уже выделенный интервал - снимаем выделение
-                    this.selectedObject = null;
+                const interval = this.sequence.current();
+                if (interval === this.selectedInterval) { //Если тыкнули на уже выделенный интервал - снимаем выделение
+                    this.selectedInterval = null;
                     this.sequence.begin();
                 } else {
-                    this.selectedObject = object;
+                    this.selectedInterval = interval;
                 }
             }
             this.highlightSelected();
@@ -291,37 +290,37 @@ export class TripMap {
     }
 
     public next() {
-        if (!this.selectedObject) {
+        if (!this.selectedInterval) {
             this.sequence.begin();
         } else {
             if (this.sequence.hasNext()) {
                 this.sequence.next();
             }
         }
-        this.selectedObject = this.sequence.current().object
+        this.selectedInterval = this.sequence.current()
         this.highlightSelected();
     }
 
     public prev() {
         if (this.sequence.hasPrev()) {
             this.sequence.prev();
-            this.selectedObject = this.sequence.current().object;
+            this.selectedInterval = this.sequence.current();
         } else {
-            this.selectedObject = null;
+            this.selectedInterval = null;
         }
 
         this.highlightSelected();
     }
 
     public hasNext(): boolean {
-        if (!this.selectedObject) {
+        if (!this.selectedInterval) {
             return this.sequence.array.length > 0;
         }
         return this.sequence.hasNext();
     }
 
     public hasPrev() {
-        return !!this.selectedObject;
+        return !!this.selectedInterval;
     }
 
     /**
@@ -364,9 +363,9 @@ export class TripMap {
         return Math.abs(p1.lat - p2.lat) + Math.abs(p1.lng - p2.lng)
     }
 
-    public select(obj: any) {
-        this.sequence.goTo(b => b.object == obj);
-        this.selectedObject = this.sequence.current().object;
+    public select(obj: Interval) {
+        this.sequence.goTo(b => b == obj);
+        this.selectedInterval = this.sequence.current();
         this.highlightSelected();
     }
 
@@ -377,8 +376,8 @@ export class TripMap {
         }
         this.selectedLines =[];
 
-        if (this.selectedObject) {
-            let obj = this.selectedObject;
+        if (this.selectedInterval) {
+            let obj = this.selectedInterval;
 
             if (obj instanceof Interval) {
                 const interval = obj;
@@ -448,7 +447,7 @@ export class TripMap {
                     const interval = new Interval(point1.date, point2.date, obj.name, obj.description);
                     this.trackModelService.addInterval(interval);
                     this.trackModelService.clearStatistic();
-                    this.sequence = new ArraySequence<Binding>(this._trackModelService.getSequenceArray());
+                    this.sequence = new ArraySequence<Interval>(this._trackModelService.getSequenceArray());
                     this.select(interval);
                     this.fireSelected();
                 }))
@@ -560,9 +559,9 @@ export class TripMap {
                         });
                     }),
                     new MenuAction("Удалить", () => {
-                        this.selectedObject = null;
+                        this.selectedInterval = null;
                         this.trackModelService.removeInterval(interval);
-                        this.sequence = new ArraySequence<Binding>(this._trackModelService.getSequenceArray());
+                        this.sequence = new ArraySequence<Interval>(this._trackModelService.getSequenceArray());
                         this.fireSelected();
                         this.highlightSelected();
                     }),
@@ -574,7 +573,7 @@ export class TripMap {
 
 
     public getSelected(): any {
-        return this.selectedObject;
+        return this.selectedInterval;
     }
 
 
@@ -587,27 +586,26 @@ export class TripMap {
         this.selectionListeners.forEach(l => l());
     }
 
-    private static findMinCoveringInterval(sequence: ArraySequence<Binding>, date: Date): boolean {
+    private static findMinCoveringInterval(sequence: ArraySequence<Interval>, date: Date): boolean {
         const arr = sequence.array;
         let resIndex = undefined;
 
         for (let i = 0; i < arr.length; i++) {
-            let binding = arr[i];
-            if (binding.object instanceof Interval) {
-                const interval = binding.object;
-                if (interval.from <= date && interval.to >= date) {
-                    if (!resIndex) {
-                        resIndex = i;
-                    } else {
-                        const oldInterval = arr[resIndex].object;
-                        if (!oldInterval || oldInterval.to.getTime() - oldInterval.from.getTime() > interval.to.getTime() - interval.from.getTime()) {
-                            resIndex = i
-                        }
+            const interval = arr[i];
+
+            if (interval.from <= date && interval.to >= date) {
+                if (!resIndex) {
+                    resIndex = i;
+                } else {
+                    const oldInterval = arr[resIndex];
+                    if (!oldInterval || oldInterval.to.getTime() - oldInterval.from.getTime() > interval.to.getTime() - interval.from.getTime()) {
+                        resIndex = i
                     }
                 }
             }
         }
-        if(typeof resIndex != 'undefined'){
+
+        if (typeof resIndex != 'undefined') {
             sequence.cur = resIndex;
             return true;
         }
@@ -615,7 +613,7 @@ export class TripMap {
     }
 
     private clearSelection() {
-        this.selectedObject = null;
+        this.selectedInterval = null;
         this.highlightSelected();
         this.fireSelected();
     }
@@ -634,6 +632,9 @@ export class TripMap {
     }
 
     selectInterval(startInterval: Interval) {
+        if(this.selectedPhoto){
+            this.deselectPhoto();
+        }
         this.select(startInterval);
     }
 }

@@ -96,7 +96,7 @@ export class API {
     }
 
     public selectIntervalById(intervalId: string, viewer: TripViewer) {
-        const interval = this.trackModelService.model.intervals.find(i => i.name == intervalId);
+        const interval = this.trackModelService.getInterval(intervalId);
         if (interval) {
             const stat = this.trackModelService.getIntervalStatistic(interval);
             viewer.selectInterval(interval)
@@ -155,6 +155,7 @@ export class API {
 
         for (const interval of trackDescription.intervals) {
             const trackInterval = new Interval(Util.parseDate(interval.from), Util.parseDate(interval.to), interval.name, interval.description);
+            trackInterval.id = interval.id;
             trackModel.intervals.push(trackInterval);
         }
 

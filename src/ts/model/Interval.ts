@@ -18,11 +18,12 @@ export class Interval {
      */
     private _from: Date;
     /**
-     * Окончание интервала, ВКЛЮЧИТИТЕЛЬНО
+     * Окончание интервала, ВКЛЮЧИТЕЛЬНО
      */
     private _to: Date;
     private _name: string;
     private _description: string;
+    private _id: string;
 
 
     get from(): Date {
@@ -55,5 +56,13 @@ export class Interval {
 
     set description(value: string) {
         this._description = value;
+    }
+
+    get id(): string {
+        return this._id;
+    }
+
+    set id(value: string) {
+        this._id = value;
     }
 }

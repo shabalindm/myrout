@@ -99,8 +99,42 @@ export class TrackModel{
     }
 
     public checkAndNormalize(){
+        let set:any = [];
+        this.intervals.forEach(i =>{
+           if(!i.name || !i.from || !i.to) {
+               throw new Error("Invalid interval: " + JSON.stringify(i))
+           }
+           if(i.id){
+               if(set[i.id]){
+                   throw new Error("Duplicate interval id: " + i.id)
+               }
+               set[i.id] = i.id;
+           }
+        })
+        set = [];
+        this.photos.forEach(p => {
+            if (!p.url || !p.lat || !p.lng) {
+                throw new Error("Invalid photo: " + JSON.stringify(p))
+            }
+
+            if (set[p.url]) {
+                throw new Error("Duplicate photo: " + p.url)
+            }
+            set[p.url] = p.url;
+        })
+        this.marks.forEach(m =>{
+            if (!m.name || !m.lat || !m.lng) {
+                throw new Error("Invalid mark: " + JSON.stringify(m))
+            }
+        })
+
         this.segments = this.segments.filter(s => s.points.length > 1).sort(((a, b) => a.points[0].date.getTime() - b.points[0].date.getTime()));
         this.pauses = this.pauses.sort(((a, b) => a.from.getTime() - b.from.getTime()));
+        this.pauses.forEach(p => {
+            if(p.to <= p.from){
+                throw Error("Invalid pause: " + JSON.stringify(p))
+            }
+        })
         if(this.pauses.length > 0) {
             let pauses = [];
             let prevPause = this.pauses[0];
@@ -115,6 +149,8 @@ export class TrackModel{
             }
             this.pauses = pauses;
         }
+
+
 
 
     }

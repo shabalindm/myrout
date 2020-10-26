@@ -81,9 +81,10 @@ export class Toolbar {
         model.intervals.forEach(interval => {
             intervals.push({
                 name: interval.name,
-                description: interval.description,
+                description: interval.description ? interval.description : undefined,
                 from: format(interval.from),
-                to: format(interval.to)
+                to: format(interval.to),
+                id:interval.id? interval.id: undefined
             })
         });
 
@@ -91,7 +92,7 @@ export class Toolbar {
         model.marks.forEach(mark =>{
             marks.push({
                 name: mark.name,
-                description: mark.description,
+                description: mark.description ? mark.description: undefined,
                 lat: mark.lat,
                 lng: mark.lng
             })

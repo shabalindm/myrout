@@ -147,8 +147,10 @@ export class TripViewer {
                 const innerNorth = bounds.getNorth() - h / 5;
                 const innerEast = bounds.getEast() - w / 10;
 
-                if (stat.maxLat - stat.minLat > innerNorth - innerSouth
-                    || stat.maxLng - stat.minLng > innerEast - innerWest) {
+                const ratio = Math.max((stat.maxLat - stat.minLat) / (innerNorth - innerSouth),
+                    (stat.maxLng - stat.minLng) / (innerEast - innerWest)
+                )
+                if (ratio > 1 ) {
                     const w1 = stat.maxLng - stat.minLng;
                     const h1 = stat.maxLat - stat.minLat;
                     map.fitBounds(new LatLngBounds(
@@ -157,36 +159,21 @@ export class TripViewer {
                     ), {
                         animate: true,
                     });
+                } else if ( ratio < 0.1) {
+                    const w1 = stat.maxLng - stat.minLng;
+                    const h1 = stat.maxLat - stat.minLat;
+                    const k = 3;//подбираем экспериментально
+                    map.fitBounds(new LatLngBounds(
+                        new LatLng(stat.minLat - h1 * k, stat.minLng - w1 * k),
+                        new LatLng(stat.maxLat + h1 * k, stat.maxLng + w1 * k)
+                    ), {
+                        animate: true,
+                    });
                 } else {
-                    // let centerLat = bounds.getCenter().lat;
-                    // let centerLng = bounds.getCenter().lng;
-                    // if (stat.maxLat > innerNorth){
-                    //     centerLat += (stat.maxLat - innerNorth)
-                    // }
-                    // if ( stat.minLat < innerSouth){
-                    //     centerLat -= (innerSouth-stat.minLat )
-                    // }
-                    // if (stat.maxLng > innerEast){
-                    //     centerLat += (stat.maxLng - innerEast)
-                    // }
-                    // if ( stat.minLng < innerWest){
-                    //     centerLat -= (innerWest - stat.minLng)
-                    // }
                     if (stat.maxLat > innerNorth || stat.minLat < innerSouth || stat.maxLng > innerEast || stat.minLng < innerWest) {
                         map.panTo(new LatLng((stat.maxLat + stat.minLat) / 2, (stat.maxLng + stat.minLng) / 2));
                     }
                 }
-
-            }
-            if (obj instanceof Mark) {//не используется
-                this.intervalBlock.style.display = 'block';
-                this.photoBlock.style.display = 'none';
-                this.title.innerHTML = TripViewer.stringify(obj.name);
-                this.description.innerHTML = TripViewer.stringify(obj.description);
-                this.distance.innerHTML = '';
-                this.time.innerHTML = '';
-                this.dates.innerHTML = '';
-                this.deltaH.innerHTML = '';
             }
         }
 

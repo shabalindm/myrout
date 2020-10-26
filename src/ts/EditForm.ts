@@ -24,6 +24,7 @@ export class EditForm {
         "        </form>"
 
 
+
     private photoObjectHtml = "<form name=\"editForm\" style=\"padding: 20px; border: solid 1px; background-color: white; width: 300px\">\n" +
         "            <label for=\"dir\">Папка</label></label><br>\n" +
         "            <input type=\"text\" style=\"width: 100%\" name=\"dir\"><br>\n" +

@@ -6,7 +6,6 @@ import {Interval} from "./model/Interval";
 import {IntervalStatistic} from "./IntervalStatistic";
 import {TrackSegment} from "./model/TrackSegment";
 import {TrackPoint} from "./model/TrackPoint";
-import {Binding} from "./sequence/Binding";
 import {LatLng} from "leaflet";
 import {Settings} from "./Settings";
 import {Mark} from "./model/Mark";
@@ -19,7 +18,7 @@ export class TrackModelService {
     private intervalsStatistics: Map<Interval, IntervalStatistic> = new Map<Interval, IntervalStatistic>();
     private globalInterval: Interval;
     private photoIndex: Map<string, Photo>;
-
+    private intervalIndex: Map<string, Interval>;
 
     constructor(model: TrackModel) {
         this._model = model;
@@ -334,20 +333,6 @@ export class TrackModelService {
         return search(ar, 0, ar.length - 1);
     }
 
-    private bindObjects(): Binding [] {
-        const res : Binding []= [];
-
-        for (const photo of this.model.photos) {   //todo сложность алгоритма n*m
-            const point = TrackModelService.findNearestTrackPoint(new LatLng(photo.lat, photo.lng), this.model) ;
-            res.push(new Binding(point, photo));
-        }
-        // for (const photo of this.model.marks) {  не используем
-        //     const point = TrackModelService.findNearestTrackPoint(new LatLng(photo.lat, photo.lng), this.model) ;
-        //     res.push(new Binding(point, photo));
-        // }
-
-        return res;
-    }
 
 
 //todo есть oчень похожая функция, надо оптимизировать.
@@ -372,50 +357,19 @@ export class TrackModelService {
         return Math.abs(p1.lat - p2.lat) + Math.abs(p1.lng - p2.lng)
     }
 
-    private bindIntervals(): Binding [] {
-        const res = [];
 
-        for (const interval of this.model.intervals) {
-            for (const trackSegment of this.model.segments) {
-                if (trackSegment.points.length == 0) {
-                    continue;
-                }
-                const fromIndex = TrackModelService.binarySearch(trackSegment.points,
-                    (point: TrackPoint): boolean => {
-                        return point.date >= interval.from;
-                    }
-                );
-                if (fromIndex != trackSegment.points.length) {
-                    res.push(new Binding(trackSegment.points[fromIndex], interval));
-                }
 
-            }
-        }
-        return res;
-    }
-
-    public getSequenceArray() {
-        return this.bindIntervals().sort(
+    public getSequenceArray() : Array<Interval> {
+        return this.model.intervals.sort(
             //Порядок сортировки:
-            //1. По дате
-            //2. Интервал больше объектов;
+            //1. По дате начала
             //3. Больший интервал - больше
             (a, b) => {
-                const dateDiff = a.point.date.getTime() - b.point.date.getTime();
+                const dateDiff = a.from.getTime() - b.from.getTime();
                 if(dateDiff != 0 ) {
                     return dateDiff;
                 }
-                else if (a.object instanceof Interval && ! (b.object instanceof Interval)){
-                    return -1;
-                }
-                else if (!(a.object instanceof Interval) && b.object instanceof Interval){
-                    return 1;
-                }
-                else if (a.object instanceof Interval && b.object instanceof Interval){
-                    return b.object.to.getTime() - a.object.to.getTime();
-                }
-
-                return dateDiff;
+                return b.to.getTime() - a.to.getTime();
             }
 
         );
@@ -459,10 +413,22 @@ export class TrackModelService {
         if(!this.photoIndex){
             const photoIndex = new Map<string, Photo>();
             this.model.photos.forEach(p => {
-               photoIndex.set(p.url.toString(), p)
+               photoIndex.set(p.url, p)
             });
             this.photoIndex = photoIndex;
         }
         return this.photoIndex.get(url)
+    }
+    public getInterval(id: string): Interval {
+        if(!this.intervalIndex){
+            const intervalIndex = new Map<string, Interval>();
+            this.model.intervals.forEach(i => {
+                if(i.id) {
+                        intervalIndex.set(id, i);
+                }
+            });
+            this.intervalIndex = intervalIndex;
+        }
+        return this.intervalIndex.get(id);
     }
 }

@@ -1,8 +1,6 @@
 import {SequenceIF} from "./sequence/SequenceIF";
 import {Interval} from "./model/Interval";
 import {ArraySequence} from "./sequence/ArraySequence";
-import {TrackModel} from "./model/TrackModel";
-import {Binding} from "./sequence/Binding";
 import {Settings} from "./Settings";
 import moment = require("moment");
 
@@ -21,7 +19,7 @@ export class Util {
         const covering: Array<Interval> = [];
 
         intervals.forEach((interval)=> {
-            if(interval.to  < selectedPointIndex){//заканчиваются до выбаранной точки
+            if(interval.to  < selectedPointIndex){//заканчиваются до выбранной точки
                 before.push(interval)
             } else if(interval.from > selectedPointIndex){//начинаются после выбранной точки
                 after.push(interval)

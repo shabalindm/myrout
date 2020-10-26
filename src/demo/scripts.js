@@ -1,6 +1,6 @@
 var modal = initModal();
 
-//document.MY_ROUTE.setEditMode();
+document.MY_ROUTE.setEditMode();
 document.MY_ROUTE.createAPI({
     track_url: "track_kavkaz_2020_clean.gpx",
     utcOffset: "180",
@@ -29,8 +29,13 @@ document.MY_ROUTE.createAPI({
         const intervalLinks =  document.getElementsByClassName("interval");
         for (const intervalLink of intervalLinks) {
             intervalLink.onclick = ()=>{
-                modal.show();
-                const widget = widgetLazyHolder.getWidget();
+                try {
+                    modal.show();
+                    const widget = widgetLazyHolder.getWidget();
+                    api.selectIntervalById(intervalLink.getAttribute("data-id"), widget);
+                } catch (e) {
+                    console.log(e);
+                }
                 return false
             };
         }
