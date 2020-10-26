@@ -221,10 +221,10 @@ export class TripViewer {
         return `+${Math.round(gain)}/${Math.round(loss)} м`;
     }
 
-    private static stringify(s: String):string {
-        if(s === undefined)
+    private static stringify(s: string):string {
+        if(!s)
             return '';
-        return String(s);
+        return s;
     }
 
     private setDatesFields(endDate: Date, beginDate: Date, timeInMotion:number) {

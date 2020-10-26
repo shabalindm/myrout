@@ -6,7 +6,7 @@
 export class Interval {
 
 
-    constructor(from: Date, to: Date, name: String, description: String) {
+    constructor(from: Date, to: Date, name: string, description: string) {
         this._from = from;
         this._to = to;
         this._name = name;
@@ -21,8 +21,8 @@ export class Interval {
      * Окончание интервала, ВКЛЮЧИТИТЕЛЬНО
      */
     private _to: Date;
-    private _name: String;
-    private _description: String;
+    private _name: string;
+    private _description: string;
 
 
     get from(): Date {
@@ -41,19 +41,19 @@ export class Interval {
         this._to = value;
     }
 
-    get name(): String {
+    get name(): string {
         return this._name;
     }
 
-    set name(value: String) {
+    set name(value: string) {
         this._name = value;
     }
 
-    get description(): String {
+    get description(): string {
         return this._description;
     }
 
-    set description(value: String) {
+    set description(value: string) {
         this._description = value;
     }
 }
