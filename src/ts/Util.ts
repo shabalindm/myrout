@@ -39,19 +39,10 @@ export class Util {
         return new ArraySequence(before.concat(covering).concat(after));
     }
 
-    static libUrl:string;
+
 
     static getUrl(path:string): string{
-        if(!this.libUrl){
-            const script =  document.currentScript || document.querySelector('script[src*="myrout.js"]');
-            // @ts-ignore
-            const libUrl = script.src;
-            this.libUrl = libUrl.split('myrout.js')[0];
-            if(!this.libUrl){
-                throw new Error("libUrl not found" )
-            }
-        }
-        return this.libUrl + path;
+        return Settings.libUrl + path;
     }
     static toMoment(date:Date){
         return moment(date).utcOffset(Settings.utcOffset)

@@ -38,6 +38,11 @@
     width: 100%;
 }
 
+.infoPanel_label {
+    font-size: smaller;
+    font-family: "DejaVu Sans";
+}
+
 
 /* -----------------*/
 #ctxMenu{

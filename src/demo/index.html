@@ -9,33 +9,29 @@
           crossorigin=""/>
     <link rel="stylesheet" type="text/css" href="../myrout/stylesheet.css">
     <link rel="stylesheet" type="text/css" href="styles.css">
-<!--    Подключаем бутстрап, пока прям сюда-->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
-    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
-
 </head>
 
 <body>
 
-<script>	$('.imagepreview').attr('src', $(this).find('img').attr('src'));
-$('#imagemodal').modal('show');</script>
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <div class="close">&times;</div>
+        <div style="width: 100%; height: 500px;"  id="trip-interactive-map"></div>
+    </div>
+</div>
+
 
 <div class="main-container">
 
-<div style="width: 100%; height: 700px; padding: 20px"  class="trip-interactive-map" track-url="track_kavkaz_2020_clean.gpx" utcOffset="180" from="2020-08-01 10:00:00" to="2020-08-03 18:00:00"
-     track-descriptions-url="part-1.json" photo-descriptions-url="photos-1.json" objects-url="objects-1.json" start-interval = "День 1" edit-mode = true></div>
+
  <br/>
     <br/> <br/>
 
-    <button type="button" class="collapsible">Фотоальбом</button>
-    <div style="display: none">
+    <a href="" class="interval" data-id="day1">День 1</a> <br/>
         <div class="photo" file="photos/1/DSC08809.JPG"></div>
-    </div>
+
     <button type="button" class="collapsible">Листинг</button>
-    <table border="solid" class="listing" from="2020-08-01 10:00:00" to="2020-08-03 18:00:00" style="font-size: small; font-family: arial;" cellpadding="4 px" >
+    <table border="solid" class="listing" from="2020-08-01 10:00:00" to="2020-08-03 18:00:00" style="font-size: x-small; font-family: arial;" cellpadding="4 px" >
 
     </table>
 </div>
@@ -44,4 +40,5 @@ $('#imagemodal').modal('show');</script>
 
 </body>
 <script type="text/javascript" src="../myrout/myrout.js"></script>
+
 <script src = scripts.js> </script>
