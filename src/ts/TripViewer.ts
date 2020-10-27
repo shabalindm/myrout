@@ -102,6 +102,12 @@ export class TripViewer {
             }
         });
         tripMap.addSelectionListener(() =>{
+            const selectedInterval = this.tripMap.getSelectedInterval();
+            if(this.sequence.current() !== selectedInterval){
+                this.sequence.goTo((i) => i === selectedInterval);
+            } else if(!selectedInterval){
+                this.sequence.begin();
+            }
             this.render();
         });
         this.render();
