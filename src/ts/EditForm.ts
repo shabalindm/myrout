@@ -67,27 +67,31 @@ export class EditForm {
             const url = obj.url;
             const dir = url.substring(0, url.lastIndexOf("/") + 1);
             dirField.value = dir;
-            nameField.value = obj.name.toString();
+            nameField.value = obj.name;
         } else {
             dirField.value = EditForm.lastDir;//Подкостылим пока - будем запоминать последнее значение
         }
 
 
         form.onsubmit = () => {
-            let url = "/";
-            if(obj) {
-                url = obj.url.toString();
-            }
+            try {
+                let url = "/";
+                if (obj) {
+                    url = obj.url;
+                }
 
-            if (fileField.files.length > 0) {
-                url = dirField.value + fileField.files[0].name;
-                EditForm.lastDir =  dirField.value;
+                if (fileField.files.length > 0) {
+                    url = dirField.value + fileField.files[0].name;
+                    EditForm.lastDir = dirField.value;
+                }
+                onSave({
+                    url: url,
+                    name: nameField.value
+                });
+                popup.remove();
+            } catch (e) {
+                console.log(e)
             }
-            onSave({
-                url: url,
-                name:nameField.value
-            });
-            popup.remove();
             return false;
         }
 
@@ -105,16 +109,20 @@ export class EditForm {
         const nameField:HTMLInputElement = form.name;
         const descriptionField:HTMLInputElement = form.description;
         if(obj) {
-            nameField.value = obj.name.toString();
-            descriptionField.value = obj.description.toString();
+            nameField.value = obj.name;
+            descriptionField.value = obj.description;
         }
 
         form.onsubmit=() => {
-            onSave({
-                name: nameField.value,
-                description: descriptionField.value
-            });
-            popup.remove();
+            try {
+                onSave({
+                    name: nameField.value,
+                    description: descriptionField.value
+                });
+                popup.remove();
+            } catch (e){
+                console.log(e)
+            }
             return false;
         }
 
@@ -137,12 +145,16 @@ export class EditForm {
             toField.value = format(obj.to);
         }
 
-        form.onsubmit=() => {
-            onSave({
-                from: fromField.value,
-                to: toField.value
-            });
-            popup.remove();
+        form.onsubmit = () => {
+            try {
+                onSave({
+                    from: fromField.value,
+                    to: toField.value
+                });
+                popup.remove();
+            } catch (e) {
+                console.log(e)
+            }
             return false;
         }
 

@@ -424,7 +424,7 @@ export class TrackModelService {
             const intervalIndex = new Map<string, Interval>();
             this.model.intervals.forEach(i => {
                 if(i.id) {
-                        intervalIndex.set(id, i);
+                        intervalIndex.set(i.id, i);
                 }
             });
             this.intervalIndex = intervalIndex;

@@ -1,13 +1,10 @@
 import {
-    FeatureGroup,
-    latLng,
-    LatLng,
-    LatLngExpression,
+    LatLng, LatLngBounds,
+    LatLngExpression, Layer,
     LayerGroup,
     LeafletEvent,
     Map,
     Marker,
-    Point,
     Polyline
 } from "leaflet";
 
@@ -15,11 +12,9 @@ import L = require("leaflet");
 import {TrackPoint} from "./model/TrackPoint";
 
 import {Interval} from "./model/Interval";
-import {ArraySequence} from "./sequence/ArraySequence";
+
 import {Util} from "./Util";
-import {TrackModel} from "./model/TrackModel";
 import {TrackSegment} from "./model/TrackSegment";
-import {LineString, MultiLineString} from "geojson";
 import {TrackModelService} from "./TrackModelService";
 import {Mark} from "./model/Mark";
 import {Photo} from "./model/Photo";
@@ -27,9 +22,7 @@ import {Settings} from "./Settings";
 import {ContextMenu} from "./ContextMenu";
 import {MenuAction} from "./MenuAction";
 import {EditForm} from "./EditForm";
-import {makeResolver} from "ts-loader/dist/resolver";
 import {Pause} from "./model/Pause";
-import {util} from "fabric/fabric-impl";
 
 /**
  * Карта с нанесенными на нее объектами
@@ -37,20 +30,14 @@ import {util} from "fabric/fabric-impl";
 export class TripMap {
     private map: Map;
     private _trackModelService: TrackModelService;
-    //последовательнось для пролистывания элементов модели. (там сейчас только интервалы)
-    private sequence: ArraySequence<Interval>;
     private _contextMenu: ContextMenu;
     private selectedInterval: Interval = null;
-    private _selectedPhoto: Photo = null;//фото выделяется независимо от интервалов.
+    private _selectedPhoto: { photo: Photo, marker: Marker, prevPosition:LatLng};
     private markerLayer: LayerGroup;
     private photoLayer: LayerGroup;
     private pauseLayer: LayerGroup;
-
-
-    //Подсветка объектов на карте
-    private selectedLines: Polyline[] = [];
-    private selectedPhotoMarker: Marker = null;
-
+    private trackLayer: LayerGroup;
+    private intervalLayer: LayerGroup;
 
     //Срабатывают при выделение/снятии выделения элемента карты.
     private selectionListeners: Array<() => void> = [];
@@ -60,6 +47,8 @@ export class TripMap {
         this._contextMenu = contextMenu;
         this.markerLayer = new LayerGroup().addTo(map);
         this.photoLayer = new LayerGroup().addTo(map);
+        this.trackLayer = new LayerGroup().addTo(map);
+        this.intervalLayer = new LayerGroup().addTo(map);
         this.pauseLayer = new LayerGroup().addTo(map);
         this.setModel(trackModelService)
     }
@@ -69,41 +58,36 @@ export class TripMap {
         const model = trackModelService.model;
         const map = this.map;
 
-        this.map.addEventListener('click', (event: LeafletEvent) => {
-                    this.deselectPhoto();
-        });
-
+        this.addDeselectPhotoEventListener(map);
         //наносим трек
         model.segments.forEach((track: TrackSegment, index: number) => {
             const latLngs = track.points.map((tp: TrackPoint) => new LatLng(tp.lat, tp.lng, tp.alt));
             const trackLine = L.polyline(latLngs, {weight: 4, opacity: 0.6});
-            trackLine.addTo(map);
+            trackLine.addTo(this.trackLayer);
             this.addTrackOnClickListener(trackLine, track);
         });
-        this.drawMarkers();
 
-        this.sequence = new ArraySequence<Interval>(this._trackModelService.getSequenceArray());
+        this.renderPhotos();
+        this.renderMarkers();
 
         if (Settings.editMode) {
             this.renderPauses();
         }
 
         L.control.scale().addTo(map);
-
     }
 
-    private drawMarkers() {
-        let model =this._trackModelService.model;
-        let map= this.map;
-        this.renerPhotos();
-        this.renderMarkers();
+    private addDeselectPhotoEventListener(o:Map|Layer){
+        o.addEventListener('click', (event: LeafletEvent) => {
+            this._deSelectPhoto();
+            return true;
+        });
     }
 
     private renderMarkers() {
         let model = this._trackModelService.model;
-        let map = this.map;
         this.markerLayer.clearLayers();
-        //маркеры
+
         const markerIcon = L.icon({
             iconUrl: Util.getUrl('ico/location.svg'),
             iconSize: [20, 20],
@@ -114,6 +98,7 @@ export class TripMap {
             const marker: Marker = L.marker([mark.lat, mark.lng], {icon: markerIcon, opacity: 50, title: mark.name});
             var popup = `<b>${mark.name}</b><br/> ${mark.description ? mark.description : ''}`
             marker.addTo(this.markerLayer);
+            this.addDeselectPhotoEventListener(marker);
             if (Settings.editMode) {
                 this.rightMenuOnMark(marker, mark);
             }
@@ -121,91 +106,33 @@ export class TripMap {
                 // @ts-ignore
                 //   maxWidth: "auto"
             });
-            marker.on('click', (event: LeafletEvent) => {
-                    this.deselectPhoto();
-                }
-            );
         });
+
     }
 
 
-    private renerPhotos() {
+    private renderPhotos() {
         let model = this._trackModelService.model;
-        let map = this.map;
         this.photoLayer.clearLayers();
+
         const photoIcon = L.icon({
             iconUrl: Util.getUrl('ico/camera.svg'),
-
-            iconSize: [20, 20], // size of the icon
-            // shadowSize:   [50, 64], // size of the shadow
-            // iconAnchor:   [22, 94], // point of the icon which will correspond to marker's location
-            // shadowAnchor: [4, 62],  // the same for the shadow
-            // popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+            iconSize: [20, 20],
         });
 
         model.photos.forEach((photo) => {
             const marker = L.marker([photo.lat, photo.lng], {icon: photoIcon});
             marker.addTo(this.photoLayer);
             marker.on('click', (event: LeafletEvent) => {
-                    if (this.selectedPhotoMarker) {
-                        this.selectedPhotoMarker.remove();
-                    }
-                    this._selectedPhoto = photo;
-                    const markerIcon = L.icon({
-                        iconUrl: Util.getUrl('ico/camera-selected.svg'),
-                        iconSize: [30, 30]
-                    });
-
-                    const marker: Marker = L.marker([photo.lat, photo.lng], {
-                        icon: markerIcon,
-                        opacity: 50,
-                        zIndexOffset: 100
-                    });
-                    this.selectedPhotoMarker = marker;
-                    marker.addTo(this.map).on('click', (event: LeafletEvent) => {
-                            this.deselectPhoto();
-                        }
-                    );
-                if (Settings.editMode) {
-                    this.rightMenuOnPhotoMarker(marker, photo);
-                }
-
-                this.fireSelected();
+                    this._selectPhoto(photo, true);
                 }
             );
             if (Settings.editMode) {
                 this.rightMenuOnPhotoMarker(marker, photo);
             }
-
-
         });
     }
 
-
-    private moveObjAction(obj: LatLng, renderFunction: () => void) {
-        this.choosePosition((newPosition => {
-            obj.lng = newPosition.lng;
-            obj.lat = newPosition.lat;
-            renderFunction()
-        }));
-    }
-
-    private choosePosition(onEndFuntion: (newPosition:LatLng) => void) {
-        this.map.getContainer().style.cursor = 'crosshair';
-        const eventCancelled = [false]
-        this.map.addOneTimeEventListener("click", (e) => {
-            this.map.getContainer().style.cursor = '';
-            if (!eventCancelled[0]) {
-                // @ts-ignore
-                var latlng = e.latlng;
-                onEndFuntion(latlng);
-            }
-        });
-        this.map.addOneTimeEventListener("contextmenu", (e) => {
-            this.map.getContainer().style.cursor = '';
-            eventCancelled[0] = true;
-        });
-    }
 
     public renderPauses() {
         this.pauseLayer.clearLayers();
@@ -253,11 +180,54 @@ export class TripMap {
         })
     }
 
-    private deselectPhoto(fire = true) {
-        if(this.selectedPhoto) {
+    private _selectPhoto(photo: Photo, fire:boolean = true) {
+        const map = this.map;
+        const selectedPhoto = this._selectedPhoto;
+
+        if (selectedPhoto) {
+            selectedPhoto.marker.remove();
+        }
+
+        const markerIcon = L.icon({
+            iconUrl: Util.getUrl('ico/camera-selected.svg'),
+            iconSize: [30, 30]
+        });
+
+        const marker: Marker = L.marker([photo.lat, photo.lng], {
+            icon: markerIcon,
+            opacity: 50,
+            zIndexOffset: 100
+        });
+
+        this._selectedPhoto = {
+            photo: photo,
+            marker: marker,
+            prevPosition: selectedPhoto ? selectedPhoto.prevPosition : this.map.getCenter()
+        }
+
+        marker.addTo(this.map).on('click', (event: LeafletEvent) => {
+            this._deSelectPhoto();
+        });
+
+        const bounds = map.getBounds();
+        map.panTo(new LatLng(photo.lat - (bounds.getSouth() - bounds.getNorth()) / 4, photo.lng), {animate: true});
+
+        if (Settings.editMode) {
+            this.rightMenuOnPhotoMarker(marker, photo);
+        }
+        if (fire) {
+            this.fireSelected();
+        }
+    }
+
+    private _deSelectPhoto(fire: boolean = true, panback: boolean = true) {
+        const selectedPhoto = this._selectedPhoto;
+        if (selectedPhoto) {
+            selectedPhoto.marker.remove();
+            // if(selectedPhoto.prevPosition && panback){
+            //     this.map.panTo(selectedPhoto.prevPosition, {animate: true})
+            // }
             this._selectedPhoto = null;
-            this.selectedPhotoMarker.remove();
-            this.selectedPhotoMarker = null;
             if(fire) {
                 this.fireSelected();
             }
@@ -266,85 +236,29 @@ export class TripMap {
 
     private addTrackOnClickListener(trackLine: Polyline, track: TrackSegment) {
         trackLine.on('click', (event: LeafletEvent) => {
-            this.deselectPhoto();
+            this._deSelectPhoto();
             // @ts-ignore
             let lat = event.latlng.lat;
             // @ts-ignore
             let lng = event.latlng.lng;
-            let clickedPoint: TrackPoint = TripMap.findNearestPointIndex(new LatLng(lat, lng), track);
-            if (!TripMap.findMinCoveringInterval(this.sequence, clickedPoint.date)) {
-                this.sequence.begin();
-                this.selectedInterval = null;
+            let clickedPoint: TrackPoint = this.findNearestPointIndexForTrack(new LatLng(lat, lng));
+            const interval = this.findMinCoveringInterval(clickedPoint.date);
+
+            if (!interval || interval === this.selectedInterval || interval === this.trackModelService.getGlobalInterval()) {
+                this._deSelectInterval(true);
             } else {
-                const interval = this.sequence.current();
-                if (interval === this.selectedInterval) { //Если тыкнули на уже выделенный интервал - снимаем выделение
-                    this.selectedInterval = null;
-                    this.sequence.begin();
-                } else {
-                    this.selectedInterval = interval;
-                }
+                this._selectInterval(interval, true)
             }
-            this.highlightSelected();
-            this.fireSelected();
         });
-    }
-
-    public next() {
-        if (!this.selectedInterval) {
-            this.sequence.begin();
-        } else {
-            if (this.sequence.hasNext()) {
-                this.sequence.next();
-            }
-        }
-        this.selectedInterval = this.sequence.current()
-        this.highlightSelected();
-    }
-
-    public prev() {
-        if (this.sequence.hasPrev()) {
-            this.sequence.prev();
-            this.selectedInterval = this.sequence.current();
-        } else {
-            this.selectedInterval = null;
-        }
-
-        this.highlightSelected();
-    }
-
-    public hasNext(): boolean {
-        if (!this.selectedInterval) {
-            return this.sequence.array.length > 0;
-        }
-        return this.sequence.hasNext();
-    }
-
-    public hasPrev() {
-        return !!this.selectedInterval;
     }
 
     /**
      * Находит ближайшую к заданной точку трека
      * @param target точка на карте.
-     * @param segment - сегмент трека
+     *
      *
      */
-    //Здесь в принципе можно выдавать пару точке, и интевал затем определять по паре, может быть так оно будет симпатичнее смотреться
-    private static findNearestPointIndex(target: LatLng, segment: TrackSegment): TrackPoint {
-        let res = segment.points[0];
-        let dist = TripMap.roughDistance(segment.points[0], target);
-
-        for (const point of segment.points) {
-            const dist1 = TripMap.roughDistance(point, target);
-            if (dist > dist1) {
-                dist = dist1;
-                res = point;
-            }
-        }
-        return res;
-    }
-
-    private  findNearestPointIndexForTrack(target: LatLng): TrackPoint {
+    private findNearestPointIndexForTrack(target: LatLng): TrackPoint {
         let res = this.trackModelService.model.segments[0].points[0];
         let dist = TripMap.roughDistance(res, target);
         this.trackModelService.model.segments.forEach(segment => {
@@ -363,52 +277,83 @@ export class TripMap {
         return Math.abs(p1.lat - p2.lat) + Math.abs(p1.lng - p2.lng)
     }
 
-    public select(obj: Interval) {
-        this.sequence.goTo(b => b == obj);
-        this.selectedInterval = this.sequence.current();
-        this.highlightSelected();
+    private _deSelectInterval(fire:boolean = true){
+        this.intervalLayer.clearLayers();
+        this.selectedInterval = null;
+        if(fire){
+            this.fireSelected()
+        }
     }
 
-    private highlightSelected() {
-        //очищаем предыдущее выделение
-        for (const line of this.selectedLines) {
-            line.remove();
-        }
-        this.selectedLines =[];
+    private _selectInterval(interval: Interval, fire = true) {
+        this.intervalLayer.clearLayers();
+        this.selectedInterval = interval;
 
-        if (this.selectedInterval) {
-            let obj = this.selectedInterval;
-
-            if (obj instanceof Interval) {
-                const interval = obj;
-
-                for (const segment of this.trackModelService.model.segments) {
-                    let latLngs = [];
-                    //todo - можно оптимизировать
-                    for (const point of segment.points) {
-                        if (point.date >= interval.from && point.date <= interval.to) {
-                            latLngs.push(new LatLng(point.lat, point.lng));
-                        }
-                    }
-                    let trackLine = L.polyline(latLngs, {
-                        color: "yellow",
-                        weight: 7,
-                        opacity: 0.8,
-                        bubblingMouseEvents: true
-                    });
-                    this.selectedLines.push(trackLine);
-                    trackLine.addTo(this.map);
-                    //новая линия перекрывает старую, так что на нее надо слушатель таки повесить (как сделать по-другому не разобрался)
-                    this.addTrackOnClickListener(trackLine, segment);
-                    if(Settings.editMode) {
-                        this.rightMenuOnTrackLine(trackLine, interval);
-                    }
-
-
+        for (const segment of this.trackModelService.model.segments) {
+            let latLngs = [];
+            //todo - можно оптимизировать
+            for (const point of segment.points) {
+                if (point.date >= interval.from && point.date <= interval.to) {
+                    latLngs.push(new LatLng(point.lat, point.lng));
                 }
+            }
+            let trackLine = L.polyline(latLngs, {
+                color: "yellow",
+                weight: 7,
+                opacity: 0.8,
+                bubblingMouseEvents: true
+            });
+            trackLine.addTo(this.intervalLayer);
+            this.addDeselectPhotoEventListener(trackLine);
+            //новая линия перекрывает старую, так что на нее надо слушатель таки повесить (как сделать по-другому не разобрался)
+            this.addTrackOnClickListener(trackLine, segment);
 
+            const stat = this.trackModelService.getIntervalStatistic(interval)
+            const map = this.map;
+            const bounds = map.getBounds();
+            const w = bounds.getEast() - bounds.getWest();
+            const h = bounds.getNorth() - bounds.getSouth();
+            const innerSouth = bounds.getSouth() + h / 10;
+            const innerWest = bounds.getWest() + w / 10;
+            const innerNorth = bounds.getNorth() - h / 5;
+            const innerEast = bounds.getEast() - w / 10;
+
+            const ratio = Math.max((stat.maxLat - stat.minLat) / (innerNorth - innerSouth),
+                (stat.maxLng - stat.minLng) / (innerEast - innerWest)
+            )
+            if (ratio > 1) {
+                const w1 = stat.maxLng - stat.minLng;
+                const h1 = stat.maxLat - stat.minLat;
+                map.fitBounds(new LatLngBounds(
+                    new LatLng(stat.minLat - h1 / 10, stat.minLng - w1 / 10),
+                    new LatLng(stat.maxLat + h1 / 3, stat.maxLng + w1 / 10)
+                ), {
+                    animate: true,
+                });
+            } else if (ratio < 0.1) {
+                const w1 = stat.maxLng - stat.minLng;
+                const h1 = stat.maxLat - stat.minLat;
+                const k = 3;//подбираем экспериментально
+                map.fitBounds(new LatLngBounds(
+                    new LatLng(stat.minLat - h1 * k, stat.minLng - w1 * k),
+                    new LatLng(stat.maxLat + h1 * k, stat.maxLng + w1 * k)
+                ), {
+                    animate: true,
+                });
+            } else {
+                if (stat.maxLat > innerNorth || stat.minLat < innerSouth || stat.maxLng > innerEast || stat.minLng < innerWest) {
+                    map.panTo(new LatLng((stat.maxLat + stat.minLat) / 2, (stat.maxLng + stat.minLng) / 2));
+                }
+            }
+
+            if (Settings.editMode) {
+                this.rightMenuOnInterval(trackLine, interval);
             }
         }
+        if(fire){
+            this.fireSelected();
+        }
+
     }
 
     public addMark(){
@@ -425,7 +370,7 @@ export class TripMap {
             new EditForm(this.map).showForPhoto(latLng, null, (obj) => {
                 const photo = new Photo(obj.url,'1', obj.name, undefined, latLng.lat, latLng.lng);
                 this.trackModelService.addPhoto(photo);
-                this.renerPhotos();
+                this.renderPhotos();
             })
         })
     }
@@ -447,8 +392,7 @@ export class TripMap {
                     const interval = new Interval(point1.date, point2.date, obj.name, obj.description);
                     this.trackModelService.addInterval(interval);
                     this.trackModelService.clearStatistic();
-                    this.sequence = new ArraySequence<Interval>(this._trackModelService.getSequenceArray());
-                    this.select(interval);
+                    this._selectInterval(interval, true);
                     this.fireSelected();
                 }))
             })
@@ -509,7 +453,7 @@ export class TripMap {
                 this._contextMenu.showContextMenu(event,
                     [
                         new MenuAction("Переместить", () => {
-                            this.moveObjAction(photo, () => this.renerPhotos());
+                            this.moveObjAction(photo, () => this.renderPhotos());
                         }),
                         new MenuAction("Изменить", () => {
                             new EditForm(this.map).showForPhoto(photo, photo, (obj) => {
@@ -520,7 +464,7 @@ export class TripMap {
                         }),
                         new MenuAction("Удалить", () => {
                             this._trackModelService.removePhoto(photo);
-                            this.renerPhotos();
+                            this.renderPhotos();
                         }),
                     ])
             }
@@ -528,7 +472,7 @@ export class TripMap {
 
     }
 
-    private rightMenuOnTrackLine(trackLine: Polyline, interval: Interval) {
+    private rightMenuOnInterval(trackLine: Polyline, interval: Interval) {
         trackLine.addEventListener('contextmenu', (e) => {
             this._contextMenu.showContextMenu(e,
                 [
@@ -537,7 +481,7 @@ export class TripMap {
                             const point = this.findNearestPointIndexForTrack(latlng);
                             interval.from = point.date;
                             this.trackModelService.clearStatistic();
-                            this.select(interval);
+                            this._selectInterval(interval, true);
                         });
                     }),
                     new MenuAction("Конец", () => {
@@ -545,7 +489,7 @@ export class TripMap {
                             const point = this.findNearestPointIndexForTrack(latlng);
                             interval.to = point.date;
                             this.trackModelService.clearStatistic();
-                            this.select(interval);
+                            this._selectInterval(interval, true);
                         });
                     }),
                     new MenuAction("Изменить", () => {
@@ -554,40 +498,62 @@ export class TripMap {
                         new EditForm(this.map).showForCommonObject(latlng, interval, (obj) => {
                             interval.description = obj.description;
                             interval.name = obj.name;
-                            this.fireSelected();
-                            this.highlightSelected();
+                            this._selectInterval(interval, true);
                         });
                     }),
                     new MenuAction("Удалить", () => {
-                        this.selectedInterval = null;
+                        this._deSelectInterval(true);
                         this.trackModelService.removeInterval(interval);
-                        this.sequence = new ArraySequence<Interval>(this._trackModelService.getSequenceArray());
-                        this.fireSelected();
-                        this.highlightSelected();
+
+
                     }),
                 ])
         });
     }
 
+    private moveObjAction(obj: LatLng, renderFunction: () => void) {
+        this.choosePosition((newPosition => {
+            obj.lng = newPosition.lng;
+            obj.lat = newPosition.lat;
+            renderFunction()
+        }));
+    }
+
+    private choosePosition(onEndFuntion: (newPosition:LatLng) => void) {
+        this.map.getContainer().style.cursor = 'crosshair';
+        const eventCancelled = [false]
+        this.map.addOneTimeEventListener("click", (e) => {
+            this.map.getContainer().style.cursor = '';
+            if (!eventCancelled[0]) {
+                // @ts-ignore
+                var latlng = e.latlng;
+                onEndFuntion(latlng);
+            }
+        });
+        this.map.addOneTimeEventListener("contextmenu", (e) => {
+            this.map.getContainer().style.cursor = '';
+            eventCancelled[0] = true;
+        });
+    }
 
 
 
-    public getSelected(): any {
+    public getSelectedInterval(): Interval {
         return this.selectedInterval;
     }
 
 
 
-    addSelectionListener(param: () => void) {
+   public addSelectionListener(param: () => void) {
         this.selectionListeners.push(param);
     }
 
-    fireSelected() {
+    private fireSelected() {
         this.selectionListeners.forEach(l => l());
     }
 
-    private static findMinCoveringInterval(sequence: ArraySequence<Interval>, date: Date): boolean {
-        const arr = sequence.array;
+    private findMinCoveringInterval(date: Date): Interval {
+        const arr = this.trackModelService.model.intervals;
         let resIndex = undefined;
 
         for (let i = 0; i < arr.length; i++) {
@@ -606,24 +572,18 @@ export class TripMap {
         }
 
         if (typeof resIndex != 'undefined') {
-            sequence.cur = resIndex;
-            return true;
+            return arr[resIndex];
         }
-        return false;
+        return null;
     }
 
-    private clearSelection() {
-        this.selectedInterval = null;
-        this.highlightSelected();
-        this.fireSelected();
-    }
 
     getMap() {
         return this.map;
     }
 
     get selectedPhoto(): Photo {
-        return this._selectedPhoto;
+      return  this._selectedPhoto ? this._selectedPhoto.photo: null;
     }
 
 
@@ -631,10 +591,12 @@ export class TripMap {
         return this._trackModelService;
     }
 
-    selectInterval(startInterval: Interval) {
-        if(this.selectedPhoto){
-            this.deselectPhoto();
+
+    public selectInterval(interval: Interval) {
+        if(interval) {
+            this._selectInterval(interval, false);
+        } else {
+            this._deSelectInterval(false);
         }
-        this.select(startInterval);
     }
 }

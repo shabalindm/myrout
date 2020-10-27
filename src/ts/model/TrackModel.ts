@@ -136,9 +136,9 @@ export class TrackModel{
             }
         })
         if(this.pauses.length > 0) {
-            let pauses = [];
+            let pauses = [this.pauses[0]];
             let prevPause = this.pauses[0];
-            for (let i = 0; i < pauses.length; i++) {
+            for (let i = 1; i < this.pauses.length; i++) {
                 const p = this.pauses[i];
                 if(p.from > prevPause.to){
                     prevPause = p;

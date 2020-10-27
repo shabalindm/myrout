@@ -2,17 +2,15 @@
  * Карта маршрута, панель управления, с информацией и статистикой.
  */
 import {TripMap} from "./TripMap";
-import {TrackSegment} from "./model/TrackSegment";
 import {TrackModelService} from "./TrackModelService";
 import {Interval} from "./model/Interval";
-import {Mark} from "./model/Mark";
-import {Photo} from "./model/Photo";
 import {Bounds, LatLng, LatLngBounds} from "leaflet";
 import L = require("leaflet");
 import {IntervalStatistic} from "./IntervalStatistic";
 import moment = require("moment");
 import {Settings} from "./Settings";
 import {Util} from "./Util";
+import {ArraySequence} from "./sequence/ArraySequence";
 
 /**
  * Обрамление карты и управляющие элементы.
@@ -38,6 +36,8 @@ export class TripViewer {
     private photoText: HTMLElement;
     private photoImg: HTMLElement;
     private trackModelService: TrackModelService;
+    //последовательнось для пролистывания элементов модели. (там сейчас только интервалы)
+    private sequence: ArraySequence<Interval>;
 
     private mounts={
         0:'янв',
@@ -80,16 +80,25 @@ export class TripViewer {
         this.photoImg = this.get("infoPanel.photo-img");
         this.photoText = this.get("infoPanel.photo-text");
 
+        this.sequence = new ArraySequence<Interval>([this.trackModelService.getGlobalInterval()]
+            .concat(this.trackModelService.getSequenceArray()));
+
         this.btnNext.addEventListener('click', () => {
-            if (this.tripMap.hasNext()) {
-                tripMap.next();
+            if (this.sequence.hasNext()) {
+                this.tripMap.selectInterval(this.sequence.next())
                 this.render();
             }
         });
         this.btnPrev.addEventListener('click', () => {
-            if (this.tripMap.hasPrev()) {
-                tripMap.prev();
-                this.render();
+            if (this.sequence.hasPrev()) {
+               const interval = this.sequence.prev();
+               if(interval === this.trackModelService.getGlobalInterval()){
+                   this.tripMap.selectInterval(null);
+               } else {
+                   this.tripMap.selectInterval(interval);
+               }
+
+               this.render();
             }
         });
         tripMap.addSelectionListener(() =>{
@@ -98,82 +107,31 @@ export class TripViewer {
         this.render();
     }
 
-
-
-
-
-    private render(){
+    private render() {
         this.highlightNavigationButtons();
-        let obj = this.tripMap.getSelected();
+        let interval = this.tripMap.getSelectedInterval();
         const model = this.trackModelService.model;
         const selectedPhoto = this.tripMap.selectedPhoto;
-        if(selectedPhoto) {
-                this.intervalBlock.style.display = 'none';
-                this.photoBlock.style.display = 'block';
-                this.title.innerHTML = 'Фото ' + TripViewer.stringify(selectedPhoto.number);
-                this.photoText.innerHTML = 'Фото ' + TripViewer.stringify(selectedPhoto.number) +'. ' + TripViewer.stringify(selectedPhoto.name);
-                this.photoImg.setAttribute("src", selectedPhoto.url.toString());
-                const map = this.tripMap.getMap();
-
-                const bounds = map.getBounds();
-                map.panTo(new LatLng(selectedPhoto.lat - (bounds.getSouth() - bounds.getNorth())/4 , selectedPhoto.lng), {animate:true})
+        if (selectedPhoto) {
+            this.intervalBlock.style.display = 'none';
+            this.photoBlock.style.display = 'block';
+            this.title.innerHTML = 'Фото ' + TripViewer.stringify(selectedPhoto.number);
+            this.photoText.innerHTML = 'Фото ' + TripViewer.stringify(selectedPhoto.number) + '. ' + TripViewer.stringify(selectedPhoto.name);
+            this.photoImg.setAttribute("src", selectedPhoto.url);
         } else {
-
-            if (!obj) {
-                this.intervalBlock.style.display = 'block';
-                this.photoBlock.style.display = 'none';
+            this.intervalBlock.style.display = 'block';
+            this.photoBlock.style.display = 'none';
+            if (!interval || interval == this.trackModelService.getGlobalInterval()) {
                 const globalInterval = this.trackModelService.getGlobalInterval();
                 const stat = this.trackModelService.getIntervalStatistic(globalInterval);
                 this.title.innerHTML = TripViewer.stringify(model.name);
                 this.description.innerHTML = TripViewer.stringify(model.description);
                 this.setStat(stat);
-            }
-
-            if (obj instanceof Interval) {
-                this.intervalBlock.style.display = 'block';
-                this.photoBlock.style.display = 'none';
-                const interval = obj;
+            } else {
                 const stat = this.trackModelService.getIntervalStatistic(interval);
                 this.title.innerHTML = TripViewer.stringify(interval.name);
                 this.description.innerHTML = TripViewer.stringify(interval.description);
                 this.setStat(stat);
-
-                const map = this.tripMap.getMap();
-                const bounds = map.getBounds();
-                const w = bounds.getEast() - bounds.getWest();
-                const h = bounds.getNorth() - bounds.getSouth();
-                const innerSouth = bounds.getSouth() + h / 10;
-                const innerWest = bounds.getWest() + w / 10;
-                const innerNorth = bounds.getNorth() - h / 5;
-                const innerEast = bounds.getEast() - w / 10;
-
-                const ratio = Math.max((stat.maxLat - stat.minLat) / (innerNorth - innerSouth),
-                    (stat.maxLng - stat.minLng) / (innerEast - innerWest)
-                )
-                if (ratio > 1 ) {
-                    const w1 = stat.maxLng - stat.minLng;
-                    const h1 = stat.maxLat - stat.minLat;
-                    map.fitBounds(new LatLngBounds(
-                        new LatLng(stat.minLat - h1 / 10, stat.minLng - w1 / 10),
-                        new LatLng(stat.maxLat + h1 / 3, stat.maxLng + w1 / 10)
-                    ), {
-                        animate: true,
-                    });
-                } else if ( ratio < 0.1) {
-                    const w1 = stat.maxLng - stat.minLng;
-                    const h1 = stat.maxLat - stat.minLat;
-                    const k = 3;//подбираем экспериментально
-                    map.fitBounds(new LatLngBounds(
-                        new LatLng(stat.minLat - h1 * k, stat.minLng - w1 * k),
-                        new LatLng(stat.maxLat + h1 * k, stat.maxLng + w1 * k)
-                    ), {
-                        animate: true,
-                    });
-                } else {
-                    if (stat.maxLat > innerNorth || stat.minLat < innerSouth || stat.maxLng > innerEast || stat.minLng < innerWest) {
-                        map.panTo(new LatLng((stat.maxLat + stat.minLat) / 2, (stat.maxLng + stat.minLng) / 2));
-                    }
-                }
             }
         }
 
@@ -272,8 +230,8 @@ export class TripViewer {
 
 
     private highlightNavigationButtons() {
-            this.enableNavigateButton(this.btnNext, this.tripMap.hasNext());
-            this.enableNavigateButton(this.btnPrev,  this.tripMap.hasPrev());
+            this.enableNavigateButton(this.btnNext, this.sequence.hasNext());
+            this.enableNavigateButton(this.btnPrev,  this.sequence.hasPrev());
     }
 
     private enableNavigateButton(btn: HTMLElement, enable: boolean) {
@@ -289,7 +247,7 @@ export class TripViewer {
     }
 
     public selectInterval(startInterval: Interval) {
-        this.tripMap.selectInterval(startInterval);
+        this.tripMap.selectInterval(this.sequence.next());
         this.render();
     }
 }

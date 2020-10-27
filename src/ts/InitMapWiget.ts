@@ -166,9 +166,6 @@ export class InitMapWiget{
 
         const contextMenu = new ContextMenu(map);
         let tMap = new TripMap(map, trackModelService, contextMenu);
-        if(startInterval){
-            tMap.selectInterval(startInterval);
-        }
         let tripViewer = new TripViewer(tMap, widget);
         if(Settings.editMode){
             new Toolbar(tMap, widget, trackDescriptionsUrl, photoDescriptionsUrl)

@@ -97,6 +97,7 @@ export class Toolbar {
                 lng: mark.lng
             })
         })
+        debugger;
         const pauses:Array<any> =[];
         model.pauses.forEach(pause =>{
             pauses.push([format(pause.from), format(pause.to)]
