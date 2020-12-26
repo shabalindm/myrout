@@ -64,7 +64,7 @@ export class EditForm {
         // @ts-ignore
         const nameField:HTMLInputElement = form.name;
         if(obj){
-            const url = obj.url;
+            const url = obj.file;
             const dir = url.substring(0, url.lastIndexOf("/") + 1);
             dirField.value = dir;
             nameField.value = obj.name;
@@ -77,7 +77,7 @@ export class EditForm {
             try {
                 let url = "/";
                 if (obj) {
-                    url = obj.url;
+                    url = obj.file;
                 }
 
                 if (fileField.files.length > 0) {

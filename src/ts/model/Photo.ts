@@ -3,7 +3,10 @@ import {LatLng} from "leaflet";
 
 
 export class Photo extends LatLng{
-    private _url: string;
+    private _file: string;
+    private url: string;
+    private previewUrl:string;
+
     /**
      * Номер фотографии (в соответсвии с нумерацией фотографий в документе)
      */
@@ -12,20 +15,20 @@ export class Photo extends LatLng{
     private _accuracy: number;
 
 
-    constructor(url: string, number: string, name: string, accuracy: number, lat: number, lng: number) {
+    constructor(file: string, number: string, name: string, accuracy: number, lat: number, lng: number) {
         super(lat, lng);
-        this._url = url;
+        this._file = file;
         this._number = number;
         this._name = name;
         this._accuracy = accuracy;
     }
 
-    get url(): string {
-        return this._url;
+    get file(): string {
+        return this._file;
     }
 
-    set url(value: string) {
-        this._url = value;
+    set file(value: string) {
+        this._file = value;
     }
 
     get number(): string {

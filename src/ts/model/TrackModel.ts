@@ -113,14 +113,14 @@ export class TrackModel{
         })
         set = [];
         this.photos.forEach(p => {
-            if (!p.url || !p.lat || !p.lng) {
+            if (!p.file || !p.lat || !p.lng) {
                 throw new Error("Invalid photo: " + JSON.stringify(p))
             }
 
-            if (set[p.url]) {
-                throw new Error("Duplicate photo: " + p.url)
+            if (set[p.file]) {
+                throw new Error("Duplicate photo: " + p.file)
             }
-            set[p.url] = p.url;
+            set[p.file] = p.file;
         })
         this.marks.forEach(m =>{
             if (!m.name || !m.lat || !m.lng) {

@@ -103,7 +103,7 @@ export class TripViewer {
         });
         tripMap.addSelectionListener(() =>{
             const selectedInterval = this.tripMap.getSelectedInterval();
-            if(this.sequence.current() !== selectedInterval){
+            if(selectedInterval && this.sequence.current() !== selectedInterval){
                 this.sequence.goTo((i) => i === selectedInterval);
             } else if(!selectedInterval){
                 this.sequence.begin();
@@ -123,7 +123,7 @@ export class TripViewer {
             this.photoBlock.style.display = 'block';
             this.title.innerHTML = 'Фото ' + TripViewer.stringify(selectedPhoto.number);
             this.photoText.innerHTML = 'Фото ' + TripViewer.stringify(selectedPhoto.number) + '. ' + TripViewer.stringify(selectedPhoto.name);
-            this.photoImg.setAttribute("src", selectedPhoto.url);
+            this.photoImg.setAttribute("src", selectedPhoto.file);
         } else {
             this.intervalBlock.style.display = 'block';
             this.photoBlock.style.display = 'none';
@@ -253,7 +253,8 @@ export class TripViewer {
     }
 
     public selectInterval(startInterval: Interval) {
-        this.tripMap.selectInterval(this.sequence.next());
+        this.sequence.goTo(i => i === startInterval)
+        this.tripMap.selectInterval(startInterval);
         this.render();
     }
 }

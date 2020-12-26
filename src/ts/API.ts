@@ -83,12 +83,13 @@ export class API {
 
     private photoTemplatePromise = Util.httpGet(Util.getUrl('photo-template.html'));
 
-    public initPhoto(photoDiv: Element, widget: HTMLElement) {
-        this.photoTemplatePromise.then((template: string) => {
+    public initPhoto(photoDiv: Element, photoTempatePath: string) {
+        const url = photoTempatePath ? photoTempatePath: Util.getUrl('photo-template.html');
+        Util.httpGet(url).then((template: string) => {
                 const src = photoDiv.getAttribute("file");
                 const photo = this.trackModelService.getPhoto(src);
                 if (photo) {
-                    const src = photo.url;
+                    const src = photo.file;
                     photoDiv.innerHTML = Util.format(template, {src: src, number: photo.number, name: photo.name});
                 }
             }
@@ -105,7 +106,10 @@ export class API {
         }
     }
     
-    public static create(params:any):Promise<API>{
+    public static create(params:any,
+                         getPhotoUrl: (file: string)=>string = s=>s,
+                         getPhotoPreviewUrl: (file: string)=>string = s=>s
+    ):Promise<API>{
         const trackUrl = params.track_url;
         const trackDescriptionsUrl = params.track_descriptions_url;
         const photoDescriptionsUrl = params.photo_descriptions_url;
@@ -133,7 +137,7 @@ export class API {
                     const trackSegment = new TrackSegment();
                     for (const point of segment.trkseg[0].trkpt) {
                         const date = new Date(point.time[0]);
-                        if (date >= from && date <= to) {
+                        if (!(from && date < from || to && date > to)) {
                             const trackPoint: TrackPoint = new TrackPoint(parseFloat(point.$.lat), parseFloat(point.$.lon), parseInt(point.ele[0]), date);
                             trackSegment.points.push(trackPoint);
                         }

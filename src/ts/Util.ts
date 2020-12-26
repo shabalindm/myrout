@@ -82,7 +82,7 @@ export class Util {
 
         for (const [key, value] of Object.entries(args)) {
             // @ts-ignore
-            formatted = formatted.replace("${" + key + "}", value);
+            formatted = formatted.replaceAll("${" + key + "}", value);
         }
         return formatted;
     }

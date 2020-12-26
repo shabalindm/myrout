@@ -4,8 +4,6 @@ document.MY_ROUTE.setEditMode();
 document.MY_ROUTE.createAPI({
     track_url: "track_kavkaz_2020_clean.gpx",
     utcOffset: "180",
-    from: "2020-08-01 10:00:00",
-    to: "2020-08-03 18:00:00",
     track_descriptions_url: "part-1.json",
     photo_descriptions_url: "photos-1.json"
 })

@@ -334,31 +334,6 @@ export class TrackModelService {
     }
 
 
-
-//todo есть oчень похожая функция, надо оптимизировать.
-    private static findNearestTrackPoint(target: LatLng, model: TrackModel): TrackPoint {
-        let res = model.segments[0].points[0];
-        for (const segment of model.segments) {
-            let dist = TrackModelService.roughDistance(segment.points[0], target);//todo - может, нужна точная функция
-
-            for (const point of segment.points) {
-                const dist1 = TrackModelService.roughDistance(point, target);
-                if (dist > dist1) {
-                    dist = dist1;
-                    res = point;
-                }
-            }
-        }
-        return res;
-    }
-
-    //todo - дубликат
-    private static roughDistance(p1: LatLng, p2: LatLng) {
-        return Math.abs(p1.lat - p2.lat) + Math.abs(p1.lng - p2.lng)
-    }
-
-
-
     public getSequenceArray() : Array<Interval> {
         return this.model.intervals.sort(
             //Порядок сортировки:
@@ -413,7 +388,7 @@ export class TrackModelService {
         if(!this.photoIndex){
             const photoIndex = new Map<string, Photo>();
             this.model.photos.forEach(p => {
-               photoIndex.set(p.url, p)
+               photoIndex.set(p.file, p)
             });
             this.photoIndex = photoIndex;
         }

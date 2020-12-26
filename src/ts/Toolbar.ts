@@ -135,7 +135,7 @@ export class Toolbar {
                 name: photo.name,
                 lat: photo.lat,
                 lng: photo.lng,
-                file: photo.url
+                file: photo.file
             })
         });
         var xhr = new XMLHttpRequest();

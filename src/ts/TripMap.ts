@@ -321,6 +321,9 @@ export class TripMap {
             const ratio = Math.max((stat.maxLat - stat.minLat) / (innerNorth - innerSouth),
                 (stat.maxLng - stat.minLng) / (innerEast - innerWest)
             )
+            if(map.getZoom()<2){
+                map.invalidateSize();
+            }
             if (ratio > 1) {
                 const w1 = stat.maxLng - stat.minLng;
                 const h1 = stat.maxLat - stat.minLat;
@@ -368,7 +371,7 @@ export class TripMap {
     public addPhoto(){
         this.choosePosition(latLng =>{
             new EditForm(this.map).showForPhoto(latLng, null, (obj) => {
-                const photo = new Photo(obj.url,'1', obj.name, undefined, latLng.lat, latLng.lng);
+                const photo = new Photo(obj.file,'1', obj.name, undefined, latLng.lat, latLng.lng);
                 this.trackModelService.addPhoto(photo);
                 this.renderPhotos();
             })
@@ -458,7 +461,7 @@ export class TripMap {
                         new MenuAction("Изменить", () => {
                             new EditForm(this.map).showForPhoto(photo, photo, (obj) => {
                                 photo.name = obj.name;
-                                photo.url = obj.url;
+                                photo.file = obj.file;
                                 this.fireSelected();
                             })
                         }),
